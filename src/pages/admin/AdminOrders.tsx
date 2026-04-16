@@ -19,9 +19,14 @@ export default function AdminOrders() {
   });
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, field, value }: { id: string; field: string; value: string }) => {
-      const { error } = await supabase.from("orders").update({ [field]: value }).eq("id", id);
-      if (error) throw error;
+    mutationFn: async ({ id, field, value }: { id: string; field: "payment_status" | "order_status"; value: string }) => {
+      if (field === "payment_status") {
+        const { error } = await supabase.from("orders").update({ payment_status: value as any }).eq("id", id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("orders").update({ order_status: value as any }).eq("id", id);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       toast.success("Status diupdate!");
