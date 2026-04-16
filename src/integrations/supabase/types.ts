@@ -14,16 +14,201 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      account_credentials: {
+        Row: {
+          created_at: string
+          credentials_encrypted: string
+          id: string
+          is_sold: boolean
+          product_id: string
+          sold_to_order: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credentials_encrypted: string
+          id?: string
+          is_sold?: boolean
+          product_id: string
+          sold_to_order?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credentials_encrypted?: string
+          id?: string
+          is_sold?: boolean
+          product_id?: string
+          sold_to_order?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_credentials_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_credentials_sold_to_order_fkey"
+            columns: ["sold_to_order"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          id: string
+          notes: string | null
+          order_number: string
+          order_status: Database["public"]["Enums"]["order_status"]
+          payment_method: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          product_id: string
+          quantity: number
+          total_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          id?: string
+          notes?: string | null
+          order_number: string
+          order_status?: Database["public"]["Enums"]["order_status"]
+          payment_method?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          product_id: string
+          quantity?: number
+          total_price: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          notes?: string | null
+          order_number?: string
+          order_status?: Database["public"]["Enums"]["order_status"]
+          payment_method?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          product_id?: string
+          quantity?: number
+          total_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category: Database["public"]["Enums"]["product_category"]
+          created_at: string
+          description: string | null
+          features: Json | null
+          id: string
+          image_url: string | null
+          name: string
+          price: number
+          rating: number
+          slug: string
+          status: Database["public"]["Enums"]["product_status"]
+          stock: number
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          image_url?: string | null
+          name: string
+          price: number
+          rating?: number
+          slug: string
+          status?: Database["public"]["Enums"]["product_status"]
+          stock?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          price?: number
+          rating?: number
+          slug?: string
+          status?: Database["public"]["Enums"]["product_status"]
+          stock?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      order_status: "processing" | "completed" | "cancelled"
+      payment_status: "pending" | "paid" | "failed" | "expired"
+      product_category:
+        | "facebook"
+        | "instagram"
+        | "tiktok"
+        | "gaming"
+        | "tools"
+        | "crypto"
+      product_status: "active" | "inactive"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +335,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      order_status: ["processing", "completed", "cancelled"],
+      payment_status: ["pending", "paid", "failed", "expired"],
+      product_category: [
+        "facebook",
+        "instagram",
+        "tiktok",
+        "gaming",
+        "tools",
+        "crypto",
+      ],
+      product_status: ["active", "inactive"],
+    },
   },
 } as const
