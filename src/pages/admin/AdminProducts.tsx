@@ -28,6 +28,7 @@ export default function AdminProducts() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<ProductInsert>>(EMPTY_FORM);
   const [featuresText, setFeaturesText] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["admin-products"],
