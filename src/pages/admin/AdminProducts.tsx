@@ -67,6 +67,7 @@ export default function AdminProducts() {
     onSuccess: () => {
       toast.success("Produk dihapus!");
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      setDeleteId(null);
     },
     onError: (err: any) => toast.error(err.message),
   });
