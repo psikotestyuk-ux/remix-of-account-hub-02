@@ -1,8 +1,11 @@
-import { Link } from "react-router-dom";
-import { ArrowRight, Shield, Zap, HeadphonesIcon, Star } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, Shield, Zap, HeadphonesIcon, Star, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { CATEGORIES, CATEGORY_EMOJI } from "@/lib/constants";
+import { toast } from "sonner";
 
 const FEATURES = [
   { icon: Shield, title: "100% Aman", desc: "Semua akun diverifikasi dan dijamin keamanannya" },
@@ -12,6 +15,16 @@ const FEATURES = [
 ];
 
 export default function Index() {
+  const navigate = useNavigate();
+  const [orderNum, setOrderNum] = useState("");
+
+  const handleCheckOrder = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = orderNum.trim();
+    if (!trimmed) { toast.error("Masukkan nomor pesanan"); return; }
+    navigate(`/order/${encodeURIComponent(trimmed)}`);
+  };
+
   return (
     <div className="flex flex-col">
       {/* Hero */}
@@ -33,6 +46,19 @@ export default function Index() {
               </Button>
             </Link>
           </div>
+
+          {/* Cek pesanan */}
+          <form onSubmit={handleCheckOrder} className="mx-auto mt-8 flex max-w-md flex-col gap-2 sm:flex-row">
+            <Input
+              value={orderNum}
+              onChange={(e) => setOrderNum(e.target.value)}
+              placeholder="Cek pesanan: BA-20260417-xxxxxxxx"
+              className="rounded-xl bg-background text-foreground placeholder:text-muted-foreground"
+            />
+            <Button type="submit" variant="secondary" className="gap-2 rounded-xl">
+              <Search className="h-4 w-4" /> Cek
+            </Button>
+          </form>
         </div>
       </section>
 
