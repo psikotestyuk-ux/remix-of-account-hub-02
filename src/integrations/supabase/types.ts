@@ -59,17 +59,66 @@ export type Database = {
           },
         ]
       }
+      account_grades: {
+        Row: {
+          base_price: number
+          created_at: string
+          description: string | null
+          grade: string
+          id: string
+          is_active: boolean
+          product_id: string
+          stock: number
+          updated_at: string
+        }
+        Insert: {
+          base_price: number
+          created_at?: string
+          description?: string | null
+          grade: string
+          id?: string
+          is_active?: boolean
+          product_id: string
+          stock?: number
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          grade?: string
+          id?: string
+          is_active?: boolean
+          product_id?: string
+          stock?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_grades_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
+          admin_notes: string | null
           created_at: string
           customer_email: string
           customer_name: string
           customer_phone: string
+          grade_id: string | null
           id: string
           notes: string | null
           order_number: string
           order_status: Database["public"]["Enums"]["order_status"]
+          package_id: string | null
           payment_method: string | null
+          payment_proof_uploaded_at: string | null
+          payment_proof_url: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
           product_id: string
           quantity: number
@@ -77,15 +126,20 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string
           customer_email: string
           customer_name: string
           customer_phone: string
+          grade_id?: string | null
           id?: string
           notes?: string | null
           order_number: string
           order_status?: Database["public"]["Enums"]["order_status"]
+          package_id?: string | null
           payment_method?: string | null
+          payment_proof_uploaded_at?: string | null
+          payment_proof_url?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           product_id: string
           quantity?: number
@@ -93,15 +147,20 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string
           customer_email?: string
           customer_name?: string
           customer_phone?: string
+          grade_id?: string | null
           id?: string
           notes?: string | null
           order_number?: string
           order_status?: Database["public"]["Enums"]["order_status"]
+          package_id?: string | null
           payment_method?: string | null
+          payment_proof_uploaded_at?: string | null
+          payment_proof_url?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           product_id?: string
           quantity?: number
@@ -110,10 +169,65 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "orders_grade_id_fkey"
+            columns: ["grade_id"]
+            isOneToOne: false
+            referencedRelation: "account_grades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      packages: {
+        Row: {
+          created_at: string
+          grade_id: string
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grade_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price: number
+          quantity: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grade_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "packages_grade_id_fkey"
+            columns: ["grade_id"]
+            isOneToOne: false
+            referencedRelation: "account_grades"
             referencedColumns: ["id"]
           },
         ]
