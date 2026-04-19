@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           credentials_encrypted: string
+          grade_id: string | null
           id: string
           is_sold: boolean
           product_id: string
@@ -27,6 +28,7 @@ export type Database = {
         Insert: {
           created_at?: string
           credentials_encrypted: string
+          grade_id?: string | null
           id?: string
           is_sold?: boolean
           product_id: string
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           created_at?: string
           credentials_encrypted?: string
+          grade_id?: string | null
           id?: string
           is_sold?: boolean
           product_id?: string
@@ -43,6 +46,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "account_credentials_grade_id_fkey"
+            columns: ["grade_id"]
+            isOneToOne: false
+            referencedRelation: "account_grades"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "account_credentials_product_id_fkey"
             columns: ["product_id"]
@@ -124,6 +134,7 @@ export type Database = {
           quantity: number
           total_price: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           admin_notes?: string | null
@@ -145,6 +156,7 @@ export type Database = {
           quantity?: number
           total_price: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           admin_notes?: string | null
@@ -166,6 +178,7 @@ export type Database = {
           quantity?: number
           total_price?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -280,6 +293,96 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          country: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          locale: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          locale?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          locale?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      promos: {
+        Row: {
+          banner_url: string | null
+          code: string
+          created_at: string
+          description: string | null
+          discount_type: Database["public"]["Enums"]["discount_type"]
+          discount_value: number
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          min_purchase: number
+          starts_at: string | null
+          title: string
+          updated_at: string
+          used_count: number
+        }
+        Insert: {
+          banner_url?: string | null
+          code: string
+          created_at?: string
+          description?: string | null
+          discount_type?: Database["public"]["Enums"]["discount_type"]
+          discount_value?: number
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_purchase?: number
+          starts_at?: string | null
+          title: string
+          updated_at?: string
+          used_count?: number
+        }
+        Update: {
+          banner_url?: string | null
+          code?: string
+          created_at?: string
+          description?: string | null
+          discount_type?: Database["public"]["Enums"]["discount_type"]
+          discount_value?: number
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_purchase?: number
+          starts_at?: string | null
+          title?: string
+          updated_at?: string
+          used_count?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -294,6 +397,78 @@ export type Database = {
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          created_at: string
+          external_ref: string | null
+          id: string
+          notes: string | null
+          order_id: string | null
+          payment_method: string | null
+          status: Database["public"]["Enums"]["wallet_tx_status"]
+          type: Database["public"]["Enums"]["wallet_tx_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after?: number | null
+          created_at?: string
+          external_ref?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["wallet_tx_status"]
+          type: Database["public"]["Enums"]["wallet_tx_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          created_at?: string
+          external_ref?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["wallet_tx_status"]
+          type?: Database["public"]["Enums"]["wallet_tx_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          currency: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -313,6 +488,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      discount_type: "percent" | "fixed"
       order_status: "processing" | "completed" | "cancelled"
       payment_status: "pending" | "paid" | "failed" | "expired"
       product_category:
@@ -323,6 +499,8 @@ export type Database = {
         | "tools"
         | "crypto"
       product_status: "active" | "inactive"
+      wallet_tx_status: "pending" | "completed" | "failed" | "cancelled"
+      wallet_tx_type: "topup" | "purchase" | "refund" | "adjustment"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -451,6 +629,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      discount_type: ["percent", "fixed"],
       order_status: ["processing", "completed", "cancelled"],
       payment_status: ["pending", "paid", "failed", "expired"],
       product_category: [
@@ -462,6 +641,8 @@ export const Constants = {
         "crypto",
       ],
       product_status: ["active", "inactive"],
+      wallet_tx_status: ["pending", "completed", "failed", "cancelled"],
+      wallet_tx_type: ["topup", "purchase", "refund", "adjustment"],
     },
   },
 } as const

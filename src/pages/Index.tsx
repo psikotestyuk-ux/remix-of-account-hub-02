@@ -1,22 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Shield, Zap, HeadphonesIcon, Star, Search } from "lucide-react";
+import { ArrowRight, Shield, Zap, HeadphonesIcon, Star, Search, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { CATEGORIES, CATEGORY_EMOJI } from "@/lib/constants";
+import { Badge } from "@/components/ui/badge";
+import { CATEGORIES, CATEGORY_EMOJI, formatRupiah } from "@/lib/constants";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const FEATURES = [
-  { icon: Shield, title: "100% Aman", desc: "Semua akun diverifikasi dan dijamin keamanannya" },
-  { icon: Zap, title: "Instan", desc: "Akun langsung dikirim setelah pembayaran berhasil" },
-  { icon: HeadphonesIcon, title: "Support 24/7", desc: "Tim support siap membantu kapan saja" },
-  { icon: Star, title: "Garansi", desc: "Garansi penggantian jika ada masalah" },
+  { icon: Shield, title: "100% Aman", desc: "Semua akun diverifikasi" },
+  { icon: Zap, title: "Instan", desc: "Akun langsung dikirim" },
+  { icon: HeadphonesIcon, title: "Support 24/7", desc: "Tim siap bantu" },
+  { icon: Star, title: "Garansi", desc: "Penggantian jika ada masalah" },
 ];
 
 export default function Index() {
   const navigate = useNavigate();
   const [orderNum, setOrderNum] = useState("");
+  const [promos, setPromos] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from("promos").select("*").eq("is_active", true).limit(3).then(({ data }) => setPromos(data || []));
+  }, []);
 
   const handleCheckOrder = (e: React.FormEvent) => {
     e.preventDefault();
