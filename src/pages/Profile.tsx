@@ -149,18 +149,18 @@ export default function Profile() {
             <p className="text-sm text-muted-foreground">Belum ada transaksi.</p>
           ) : (
             <div className="space-y-2">
-              {txs.slice(0, 5).map((t) => {
+                {txs.slice(0, 5).map((t) => {
                 const isCredit = t.type === "topup" || t.type === "refund";
                 return (
                   <div key={t.id} className="flex items-center justify-between rounded-xl border p-3">
                     <div className="flex items-center gap-3">
-                      {isCredit ? <ArrowDownCircle className="h-5 w-5 text-green-600" /> : <ArrowUpCircle className="h-5 w-5 text-red-600" />}
+                      {isCredit ? <ArrowDownCircle className="h-5 w-5 text-success" /> : <ArrowUpCircle className="h-5 w-5 text-destructive" />}
                       <div>
                         <p className="text-sm font-semibold capitalize">{t.type}</p>
                         <p className="text-xs text-muted-foreground">{new Date(t.created_at).toLocaleString("id-ID")} • {t.status}</p>
                       </div>
                     </div>
-                    <span className={`font-bold ${isCredit ? "text-green-600" : "text-red-600"}`}>
+                    <span className={`font-bold ${isCredit ? "text-success" : "text-destructive"}`}>
                       {isCredit ? "+" : "-"}{formatRupiah(Number(t.amount))}
                     </span>
                   </div>

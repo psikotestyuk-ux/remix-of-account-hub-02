@@ -48,7 +48,7 @@ export default function Wallet() {
               <Card key={t.id} className="border-0 shadow-sm">
                 <CardContent className="flex items-center justify-between p-4">
                   <div className="flex items-center gap-3">
-                    {isCredit ? <ArrowDownCircle className="h-6 w-6 text-green-600" /> : <ArrowUpCircle className="h-6 w-6 text-red-600" />}
+                    {isCredit ? <ArrowDownCircle className="h-6 w-6 text-success" /> : <ArrowUpCircle className="h-6 w-6 text-destructive" />}
                     <div>
                       <p className="text-sm font-semibold capitalize">{t.type}</p>
                       <p className="text-xs text-muted-foreground">{new Date(t.created_at).toLocaleString("id-ID")}</p>
@@ -56,7 +56,7 @@ export default function Wallet() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className={`block font-bold ${isCredit ? "text-green-600" : "text-red-600"}`}>
+                    <span className={`block font-bold ${isCredit ? "text-success" : "text-destructive"}`}>
                       {isCredit ? "+" : "-"}{formatRupiah(Number(t.amount))}
                     </span>
                     <Badge variant={t.status === "completed" ? "default" : "secondary"} className="mt-1 text-[10px]">{t.status}</Badge>
