@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -12,6 +13,11 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
 import OrderDetail from "./pages/OrderDetail";
+import OrdersLookup from "./pages/OrdersLookup";
+import Auth from "./pages/Auth";
+import Profile from "./pages/Profile";
+import TopUp from "./pages/TopUp";
+import Wallet from "./pages/Wallet";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -19,6 +25,8 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminCredentials from "./pages/admin/AdminCredentials";
 import AdminGrades from "./pages/admin/AdminGrades";
+import AdminPromos from "./pages/admin/AdminPromos";
+import AdminImportCredentials from "./pages/admin/AdminImportCredentials";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,8 +35,9 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-16 md:pb-0">{children}</main>
       <Footer />
+      <MobileBottomNav />
     </div>
   );
 }
@@ -47,13 +56,20 @@ const App = () => (
           <Route path="/checkout" element={<PublicLayout><Checkout /></PublicLayout>} />
           <Route path="/order-success" element={<PublicLayout><OrderSuccess /></PublicLayout>} />
           <Route path="/order/:orderNumber" element={<PublicLayout><OrderDetail /></PublicLayout>} />
+          <Route path="/orders-lookup" element={<PublicLayout><OrdersLookup /></PublicLayout>} />
+          <Route path="/auth" element={<PublicLayout><Auth /></PublicLayout>} />
+          <Route path="/profile" element={<PublicLayout><Profile /></PublicLayout>} />
+          <Route path="/topup" element={<PublicLayout><TopUp /></PublicLayout>} />
+          <Route path="/wallet" element={<PublicLayout><Wallet /></PublicLayout>} />
           <Route path="/admin/login" element={<PublicLayout><AdminLogin /></PublicLayout>} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="grades" element={<AdminGrades />} />
+            <Route path="promos" element={<AdminPromos />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="credentials" element={<AdminCredentials />} />
+            <Route path="import" element={<AdminImportCredentials />} />
           </Route>
           <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
         </Routes>

@@ -39,7 +39,7 @@ export default function Auth() {
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword(parsed.data);
+      const { error } = await supabase.auth.signInWithPassword({ email: parsed.data.email, password: parsed.data.password });
       if (error) throw error;
       toast.success("Selamat datang!");
       navigate(redirect, { replace: true });
