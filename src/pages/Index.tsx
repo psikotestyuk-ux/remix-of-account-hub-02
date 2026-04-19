@@ -69,6 +69,44 @@ export default function Index() {
         </div>
       </section>
 
+      {/* Promo Banners */}
+      {promos.length > 0 && (
+        <section className="container mx-auto px-4 py-10">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-bold md:text-3xl">Promo Aktif</h2>
+            <Badge variant="secondary" className="gap-1"><Tag className="h-3 w-3" /> {promos.length} promo</Badge>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {promos.map((p) => (
+              <Card key={p.id} className="group overflow-hidden border-0 shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl">
+                {p.banner_url ? (
+                  <div className="aspect-[16/9] overflow-hidden bg-muted">
+                    <img src={p.banner_url} alt={p.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
+                  </div>
+                ) : (
+                  <div className="flex aspect-[16/9] items-center justify-center bg-gradient-to-br from-primary to-accent text-primary-foreground">
+                    <Tag className="h-12 w-12 opacity-80" />
+                  </div>
+                )}
+                <CardContent className="p-5">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Badge className="bg-primary/10 text-primary hover:bg-primary/20">{p.code}</Badge>
+                    <span className="text-sm font-semibold text-primary">
+                      {p.discount_type === "percent" ? `${p.discount_value}%` : formatRupiah(p.discount_value)} OFF
+                    </span>
+                  </div>
+                  <h3 className="mb-1 font-bold">{p.title}</h3>
+                  {p.description && <p className="line-clamp-2 text-sm text-muted-foreground">{p.description}</p>}
+                  {p.min_purchase > 0 && (
+                    <p className="mt-2 text-xs text-muted-foreground">Min. belanja {formatRupiah(p.min_purchase)}</p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Features */}
       <section className="container mx-auto px-4 py-16">
         <h2 className="mb-10 text-center text-2xl font-bold md:text-3xl">Kenapa Pilih BuyingAccount?</h2>

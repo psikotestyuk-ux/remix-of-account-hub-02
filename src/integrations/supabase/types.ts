@@ -120,6 +120,7 @@ export type Database = {
           customer_email: string
           customer_name: string
           customer_phone: string
+          discount_amount: number
           grade_id: string | null
           id: string
           notes: string | null
@@ -131,6 +132,7 @@ export type Database = {
           payment_proof_url: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
           product_id: string
+          promo_code: string | null
           quantity: number
           total_price: number
           updated_at: string
@@ -142,6 +144,7 @@ export type Database = {
           customer_email: string
           customer_name: string
           customer_phone: string
+          discount_amount?: number
           grade_id?: string | null
           id?: string
           notes?: string | null
@@ -153,6 +156,7 @@ export type Database = {
           payment_proof_url?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           product_id: string
+          promo_code?: string | null
           quantity?: number
           total_price: number
           updated_at?: string
@@ -164,6 +168,7 @@ export type Database = {
           customer_email?: string
           customer_name?: string
           customer_phone?: string
+          discount_amount?: number
           grade_id?: string | null
           id?: string
           notes?: string | null
@@ -175,6 +180,7 @@ export type Database = {
           payment_proof_url?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           product_id?: string
+          promo_code?: string | null
           quantity?: number
           total_price?: number
           updated_at?: string
