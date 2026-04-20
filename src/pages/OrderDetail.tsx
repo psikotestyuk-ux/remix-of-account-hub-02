@@ -188,14 +188,73 @@ export default function OrderDetail() {
                   Paket: <span className="font-medium text-foreground">{pkg.name}</span> ({pkg.quantity} akun)
                 </p>
               )}
-              {order.payment_status === "paid" && (
-                <div className="mt-6 rounded-xl bg-green-50 p-4">
-                  <p className="mb-1 text-sm font-medium text-green-800">✅ Pembayaran disetujui!</p>
-                  <p className="text-xs text-green-700">
-                    Kredensial akun akan dikirim ke email {order.customer_email}. Cek juga folder spam.
+              {order.payment_status === "paid" && order.order_status !== "completed" && (
+                <div className="mt-6 rounded-xl bg-success/10 p-4">
+                  <p className="mb-1 text-sm font-medium text-success">✅ Pembayaran disetujui!</p>
+                  <p className="text-xs text-muted-foreground">
+                    Kredensial sedang disiapkan. Refresh halaman ini sebentar lagi.
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {order.order_status === "completed" && credentials && credentials.length > 0 && (
+          <Card className="border-0 shadow-lg md:col-span-2">
+            <CardContent className="p-6">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="h-5 w-5 text-primary" />
+                  <h3 className="font-bold">Akun Kamu ({credentials.length})</h3>
+                </div>
+                <Button size="sm" variant="outline" className="gap-2 rounded-lg" onClick={downloadAll}>
+                  <Download className="h-4 w-4" /> Download .txt
+                </Button>
+              </div>
+              <div className="mb-3 rounded-lg bg-warning/10 p-3 text-xs text-foreground/80">
+                ⚠️ Simpan kredensial ini dengan aman. Untuk keamanan, segera ganti password setelah login pertama.
+              </div>
+              <div className="space-y-3">
+                {credentials.map((c, idx) => {
+                  const { email, password } = parseCred(c.credentials_encrypted);
+                  return (
+                    <div key={c.id} className="rounded-xl border bg-muted/30 p-4">
+                      <div className="mb-3 flex items-center justify-between">
+                        <Badge variant="secondary" className="rounded-md">Akun #{idx + 1}</Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 gap-1 text-xs"
+                          onClick={() => downloadOne(c.credentials_encrypted, idx)}
+                        >
+                          <Download className="h-3 w-3" /> .txt
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-20 text-xs text-muted-foreground">Email</span>
+                          <code className="flex-1 truncate rounded bg-background px-2 py-1.5 text-xs">{email}</code>
+                          <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => copy(email, `e${idx}`)}>
+                            {copiedIdx === `e${idx}` ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                          </Button>
+                        </div>
+                        {password && (
+                          <div className="flex items-center gap-2">
+                            <span className="flex w-20 items-center gap-1 text-xs text-muted-foreground">
+                              <Lock className="h-3 w-3" /> Pass
+                            </span>
+                            <code className="flex-1 truncate rounded bg-background px-2 py-1.5 text-xs">{password}</code>
+                            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => copy(password, `p${idx}`)}>
+                              {copiedIdx === `p${idx}` ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
         )}
