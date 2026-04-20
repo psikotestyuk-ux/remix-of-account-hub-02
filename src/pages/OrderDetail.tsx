@@ -212,7 +212,7 @@ export default function OrderDetail() {
                   <Download className="h-4 w-4" /> Download .txt
                 </Button>
               </div>
-              <div className="mb-3 rounded-lg bg-warning/10 p-3 text-xs text-foreground/80">
+              <div className="mb-3 rounded-lg border border-accent/30 bg-accent/10 p-3 text-xs text-foreground/80">
                 ⚠️ Simpan kredensial ini dengan aman. Untuk keamanan, segera ganti password setelah login pertama.
               </div>
               <div className="space-y-3">
