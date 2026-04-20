@@ -1,12 +1,14 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Package, Clock, CheckCircle, XCircle } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Copy, Check, Download, Lock, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatRupiah, CATEGORY_EMOJI } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const STATUS_MAP = {
   pending: { label: "Menunggu Verifikasi", icon: Clock, color: "bg-yellow-100 text-yellow-800" },
@@ -23,6 +25,7 @@ const ORDER_STATUS_MAP = {
 
 export default function OrderDetail() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
+  const [copiedIdx, setCopiedIdx] = useState<string | null>(null);
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderNumber],
@@ -37,6 +40,58 @@ export default function OrderDetail() {
     },
     enabled: !!orderNumber,
   });
+
+  const { data: credentials } = useQuery({
+    queryKey: ["order-credentials", order?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("account_credentials")
+        .select("id, credentials_encrypted, created_at")
+        .eq("sold_to_order", order!.id)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!order && order.payment_status === "paid" && order.order_status === "completed",
+  });
+
+  const parseCred = (raw: string) => {
+    const idx = raw.indexOf(":");
+    if (idx < 0) return { email: raw, password: "" };
+    return { email: raw.slice(0, idx).trim(), password: raw.slice(idx + 1).trim() };
+  };
+
+  const copy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIdx(key);
+    toast.success("Disalin");
+    setTimeout(() => setCopiedIdx(null), 1500);
+  };
+
+  const downloadAll = () => {
+    if (!credentials || !order) return;
+    const lines = credentials.map((c, i) => `# Akun ${i + 1}\n${c.credentials_encrypted}`).join("\n\n");
+    const content = `# Order ${order.order_number}\n# Total akun: ${credentials.length}\n# Tanggal: ${new Date().toLocaleString("id-ID")}\n\n${lines}\n`;
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${order.order_number}-akun.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("File diunduh");
+  };
+
+  const downloadOne = (raw: string, idx: number) => {
+    if (!order) return;
+    const blob = new Blob([raw], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${order.order_number}-akun-${idx + 1}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (isLoading) {
     return (
@@ -133,14 +188,73 @@ export default function OrderDetail() {
                   Paket: <span className="font-medium text-foreground">{pkg.name}</span> ({pkg.quantity} akun)
                 </p>
               )}
-              {order.payment_status === "paid" && (
-                <div className="mt-6 rounded-xl bg-green-50 p-4">
-                  <p className="mb-1 text-sm font-medium text-green-800">✅ Pembayaran disetujui!</p>
-                  <p className="text-xs text-green-700">
-                    Kredensial akun akan dikirim ke email {order.customer_email}. Cek juga folder spam.
+              {order.payment_status === "paid" && order.order_status !== "completed" && (
+                <div className="mt-6 rounded-xl bg-success/10 p-4">
+                  <p className="mb-1 text-sm font-medium text-success">✅ Pembayaran disetujui!</p>
+                  <p className="text-xs text-muted-foreground">
+                    Kredensial sedang disiapkan. Refresh halaman ini sebentar lagi.
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {order.order_status === "completed" && credentials && credentials.length > 0 && (
+          <Card className="border-0 shadow-lg md:col-span-2">
+            <CardContent className="p-6">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="h-5 w-5 text-primary" />
+                  <h3 className="font-bold">Akun Kamu ({credentials.length})</h3>
+                </div>
+                <Button size="sm" variant="outline" className="gap-2 rounded-lg" onClick={downloadAll}>
+                  <Download className="h-4 w-4" /> Download .txt
+                </Button>
+              </div>
+              <div className="mb-3 rounded-lg border border-accent/30 bg-accent/10 p-3 text-xs text-foreground/80">
+                ⚠️ Simpan kredensial ini dengan aman. Untuk keamanan, segera ganti password setelah login pertama.
+              </div>
+              <div className="space-y-3">
+                {credentials.map((c, idx) => {
+                  const { email, password } = parseCred(c.credentials_encrypted);
+                  return (
+                    <div key={c.id} className="rounded-xl border bg-muted/30 p-4">
+                      <div className="mb-3 flex items-center justify-between">
+                        <Badge variant="secondary" className="rounded-md">Akun #{idx + 1}</Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 gap-1 text-xs"
+                          onClick={() => downloadOne(c.credentials_encrypted, idx)}
+                        >
+                          <Download className="h-3 w-3" /> .txt
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-20 text-xs text-muted-foreground">Email</span>
+                          <code className="flex-1 truncate rounded bg-background px-2 py-1.5 text-xs">{email}</code>
+                          <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => copy(email, `e${idx}`)}>
+                            {copiedIdx === `e${idx}` ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                          </Button>
+                        </div>
+                        {password && (
+                          <div className="flex items-center gap-2">
+                            <span className="flex w-20 items-center gap-1 text-xs text-muted-foreground">
+                              <Lock className="h-3 w-3" /> Pass
+                            </span>
+                            <code className="flex-1 truncate rounded bg-background px-2 py-1.5 text-xs">{password}</code>
+                            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => copy(password, `p${idx}`)}>
+                              {copiedIdx === `p${idx}` ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
         )}
