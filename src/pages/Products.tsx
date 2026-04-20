@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PromoBanner } from "@/components/PromoBanner";
 
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -32,7 +33,9 @@ export default function Products() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="mb-2 text-3xl font-bold">Semua Produk</h1>
-      <p className="mb-8 text-muted-foreground">Temukan akun digital terbaik untuk kebutuhanmu</p>
+      <p className="mb-6 text-muted-foreground">Temukan akun digital terbaik untuk kebutuhanmu</p>
+
+      <PromoBanner />
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">

@@ -1,12 +1,14 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Package, Clock, CheckCircle, XCircle } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Copy, Check, Download, Lock, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatRupiah, CATEGORY_EMOJI } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const STATUS_MAP = {
   pending: { label: "Menunggu Verifikasi", icon: Clock, color: "bg-yellow-100 text-yellow-800" },
@@ -23,6 +25,7 @@ const ORDER_STATUS_MAP = {
 
 export default function OrderDetail() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
+  const [copiedIdx, setCopiedIdx] = useState<string | null>(null);
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderNumber],
@@ -37,6 +40,58 @@ export default function OrderDetail() {
     },
     enabled: !!orderNumber,
   });
+
+  const { data: credentials } = useQuery({
+    queryKey: ["order-credentials", order?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("account_credentials")
+        .select("id, credentials_encrypted, created_at")
+        .eq("sold_to_order", order!.id)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!order && order.payment_status === "paid" && order.order_status === "completed",
+  });
+
+  const parseCred = (raw: string) => {
+    const idx = raw.indexOf(":");
+    if (idx < 0) return { email: raw, password: "" };
+    return { email: raw.slice(0, idx).trim(), password: raw.slice(idx + 1).trim() };
+  };
+
+  const copy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIdx(key);
+    toast.success("Disalin");
+    setTimeout(() => setCopiedIdx(null), 1500);
+  };
+
+  const downloadAll = () => {
+    if (!credentials || !order) return;
+    const lines = credentials.map((c, i) => `# Akun ${i + 1}\n${c.credentials_encrypted}`).join("\n\n");
+    const content = `# Order ${order.order_number}\n# Total akun: ${credentials.length}\n# Tanggal: ${new Date().toLocaleString("id-ID")}\n\n${lines}\n`;
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${order.order_number}-akun.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("File diunduh");
+  };
+
+  const downloadOne = (raw: string, idx: number) => {
+    if (!order) return;
+    const blob = new Blob([raw], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${order.order_number}-akun-${idx + 1}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (isLoading) {
     return (
