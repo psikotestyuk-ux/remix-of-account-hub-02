@@ -27,8 +27,21 @@ export default function TopUp() {
     if (amount > 50_000_000) { toast.error("Maksimal topup Rp 50.000.000"); return; }
     setLoading(true);
     try {
-      // MOCK Xendit flow - langsung credit saldo (production: panggil edge function create-invoice)
-      const newBalance = balance + amount;
+      // Read current balance fresh from DB (avoid stale state)
+      const { data: wRow } = await supabase
+        .from("wallets")
+        .select("balance")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const currentBalance = wRow?.balance ?? 0;
+      const newBalance = currentBalance + amount;
+
+      // Upsert ensures wallet row exists even for legacy users
+      const { error: wErr } = await supabase
+        .from("wallets")
+        .upsert({ user_id: user.id, balance: newBalance }, { onConflict: "user_id" });
+      if (wErr) throw wErr;
+
       const { error: txErr } = await supabase.from("wallet_transactions").insert({
         user_id: user.id,
         type: "topup",
@@ -39,8 +52,7 @@ export default function TopUp() {
         notes: "Top up via Xendit (mock - menunggu integrasi production)",
       });
       if (txErr) throw txErr;
-      const { error: wErr } = await supabase.from("wallets").update({ balance: newBalance }).eq("user_id", user.id);
-      if (wErr) throw wErr;
+
       await refreshBalance();
       toast.success(`Saldo +${formatRupiah(amount)} berhasil ditambahkan`);
       navigate("/profile");
