@@ -176,7 +176,7 @@ export default function Checkout() {
             </Card>
           )}
 
-          <Button type="submit" disabled={loading || insufficient || (grades.length > 0 && !selectedPkg)}
+          <Button type="submit" disabled={loading || insufficient || totalPrice <= 0 || hasGradesButNoPkg}
             className="w-full gap-2 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90" size="lg">
             {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Memproses...</> : <><ShoppingBag className="h-4 w-4" /> Bayar dengan Saldo</>}
           </Button>
