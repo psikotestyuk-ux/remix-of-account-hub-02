@@ -70,7 +70,8 @@ export default function Checkout() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (grades.length > 0 && (!selectedGrade || !selectedPkg)) { toast.error("Pilih grade & paket"); return; }
+    if (grades.length > 0 && packages.length > 0 && !selectedPkg) { toast.error("Pilih paket dulu"); return; }
+    if (grades.length > 0 && !selectedGrade) { toast.error("Pilih grade dulu"); return; }
     if (totalPrice <= 0) { toast.error("Total tidak valid"); return; }
     if (insufficient) { toast.error("Saldo tidak cukup. Top up dulu."); return; }
 
