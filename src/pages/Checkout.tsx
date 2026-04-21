@@ -54,9 +54,18 @@ export default function Checkout() {
 
   const pkg = packages.find((p) => p.id === selectedPkg);
   const grade = grades.find((g) => g.id === selectedGrade);
-  const totalPrice = grades.length > 0 ? (pkg?.price ?? 0) : item.price * item.quantity;
-  const finalQty = grades.length > 0 ? (pkg?.quantity ?? 1) : item.quantity;
+  // Pricing logic:
+  // - Jika ada paket dipilih → pakai harga paket
+  // - Jika ada grade tapi belum/tidak ada paket → pakai base_price grade × quantity cart
+  // - Jika tidak ada grade sama sekali → pakai harga produk × quantity cart
+  const totalPrice = pkg
+    ? pkg.price
+    : grade
+    ? grade.base_price * item.quantity
+    : item.price * item.quantity;
+  const finalQty = pkg ? pkg.quantity : item.quantity;
   const insufficient = totalPrice > balance;
+  const hasGradesButNoPkg = grades.length > 0 && packages.length > 0 && !selectedPkg;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
