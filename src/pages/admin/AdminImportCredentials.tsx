@@ -1,15 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileText, Loader2 } from "lucide-react";
+import { Upload, FileText, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 type Product = { id: string; name: string };
 type Grade = { id: string; grade: string; product_id: string; stock: number };
+
+// Split a big pasted text into account blocks.
+// Strategy: split on blank lines OR on lines starting with "Id Fb:" / "ID FB:" markers.
+// Each non-empty block becomes 1 account.
+function splitIntoBlocks(raw: string): string[] {
+  if (!raw.trim()) return [];
+  const text = raw.replace(/\r\n/g, "\n").trim();
+
+  // If the text contains "Id Fb:" markers, split on those (keeping the marker with each block).
+  const markerRe = /(^|\n)\s*(?=Id\s*Fb\s*:)/gi;
+  if (/Id\s*Fb\s*:/i.test(text)) {
+    const parts = text.split(markerRe).map((p) => p.trim()).filter(Boolean);
+    // Filter out the leading "header" (e.g. "SPM 27/07/2025") that comes before the first "Id Fb:"
+    return parts.filter((p) => /Id\s*Fb\s*:/i.test(p));
+  }
+
+  // Fallback: split on blank lines (one or more empty lines)
+  return text.split(/\n\s*\n+/).map((b) => b.trim()).filter(Boolean);
+}
 
 export default function AdminImportCredentials() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -18,7 +37,6 @@ export default function AdminImportCredentials() {
   const [gradeId, setGradeId] = useState("");
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState<{ valid: number; invalid: number; samples: string[] }>({ valid: 0, invalid: 0, samples: [] });
 
   useEffect(() => {
     supabase.from("products").select("id, name").order("name").then(({ data }) => setProducts(data || []));
@@ -30,29 +48,7 @@ export default function AdminImportCredentials() {
       .then(({ data }) => { setGrades((data as any) || []); setGradeId(""); });
   }, [productId]);
 
-  // Parse format email:password (1 per line)
-  const parsed = (() => {
-    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    const valid: { email: string; password: string }[] = [];
-    const invalid: string[] = [];
-    for (const line of lines) {
-      const idx = line.indexOf(":");
-      if (idx <= 0 || idx === line.length - 1) { invalid.push(line); continue; }
-      const email = line.slice(0, idx).trim();
-      const password = line.slice(idx + 1).trim();
-      if (!email || !password || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { invalid.push(line); continue; }
-      valid.push({ email, password });
-    }
-    return { valid, invalid };
-  })();
-
-  useEffect(() => {
-    setPreview({
-      valid: parsed.valid.length,
-      invalid: parsed.invalid.length,
-      samples: parsed.valid.slice(0, 3).map((v) => `${v.email}:${"•".repeat(8)}`),
-    });
-  }, [text]);
+  const blocks = useMemo(() => splitIntoBlocks(text), [text]);
 
   const handleFile = async (f: File) => {
     if (f.size > 5 * 1024 * 1024) { toast.error("File maks 5MB"); return; }
@@ -61,15 +57,14 @@ export default function AdminImportCredentials() {
   };
 
   const handleImport = async () => {
-    if (!productId) { toast.error("Pilih produk"); return; }
-    if (parsed.valid.length === 0) { toast.error("Tidak ada baris valid"); return; }
+    if (!productId) { toast.error("Pilih produk dulu"); return; }
+    if (blocks.length === 0) { toast.error("Tidak ada akun untuk diimport"); return; }
     setLoading(true);
     try {
-      // Encode credentials as JSON string per row (simple base64 wrap; admin-only RLS)
-      const rows = parsed.valid.map((v) => ({
+      const rows = blocks.map((b) => ({
         product_id: productId,
         grade_id: gradeId || null,
-        credentials_encrypted: btoa(JSON.stringify(v)),
+        credentials_encrypted: b, // Stored as free-text, dikirim verbatim ke buyer
       }));
       const { error } = await supabase.from("account_credentials").insert(rows);
       if (error) throw error;
@@ -78,11 +73,11 @@ export default function AdminImportCredentials() {
       if (gradeId) {
         const grade = grades.find((g) => g.id === gradeId);
         if (grade) {
-          await supabase.from("account_grades").update({ stock: grade.stock + parsed.valid.length }).eq("id", gradeId);
+          await supabase.from("account_grades").update({ stock: grade.stock + blocks.length }).eq("id", gradeId);
         }
       }
 
-      toast.success(`${parsed.valid.length} akun berhasil diimport`);
+      toast.success(`${blocks.length} akun berhasil diimport ke stok!`);
       setText("");
     } catch (err: any) {
       toast.error("Gagal: " + err.message);
@@ -90,17 +85,19 @@ export default function AdminImportCredentials() {
   };
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Import Akun (TXT)</h1>
-        <p className="text-sm text-muted-foreground">Upload file <code>.txt</code> atau paste daftar akun. Format: <code className="rounded bg-muted px-1">email:password</code> (1 per baris).</p>
+        <h1 className="text-2xl font-bold">Import Akun (Bulk)</h1>
+        <p className="text-sm text-muted-foreground">
+          Paste banyak akun sekaligus, atau upload file <code>.txt</code>. Tiap akun dipisah baris kosong, atau otomatis terdeteksi dari marker <code className="rounded bg-muted px-1">Id Fb:</code>.
+        </p>
       </div>
 
       <Card className="mb-4 border-0 shadow-lg">
         <CardContent className="space-y-4 p-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <Label>Produk</Label>
+              <Label>Produk *</Label>
               <select value={productId} onChange={(e) => setProductId(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
                 <option value="">— Pilih produk —</option>
                 {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -121,32 +118,44 @@ export default function AdminImportCredentials() {
           </div>
 
           <div>
-            <Label htmlFor="paste">Atau paste manual</Label>
-            <Textarea id="paste" rows={8} value={text} onChange={(e) => setText(e.target.value)} placeholder="user1@gmail.com:passw0rd&#10;user2@gmail.com:secret123" className="font-mono text-sm" />
+            <Label htmlFor="paste">Atau paste manual (banyak akun sekaligus)</Label>
+            <Textarea
+              id="paste"
+              rows={14}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={`Id Fb: 61582518594924\nEmail Fb: rd@outlook.com\nPass Fb: H4h4h4h4\n2FA: ...\n\nId Fb: 61578682753163\nEmail Fb: ...\n...`}
+              className="font-mono text-xs"
+            />
           </div>
 
           <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 text-sm">
-            <FileText className="h-5 w-5 text-muted-foreground" />
+            <Sparkles className="h-5 w-5 text-primary" />
             <div className="flex-1">
-              <span className="mr-2"><Badge>{preview.valid} valid</Badge></span>
-              {preview.invalid > 0 && <Badge variant="destructive">{preview.invalid} invalid</Badge>}
-              {preview.samples.length > 0 && <p className="mt-1 text-xs text-muted-foreground">Contoh: {preview.samples.join(" • ")}</p>}
+              <Badge className="text-sm">{blocks.length} akun terdeteksi</Badge>
+              {blocks.length > 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Preview akun pertama: <span className="font-mono">{blocks[0].split("\n").slice(0, 2).join(" | ").slice(0, 80)}…</span>
+                </p>
+              )}
             </div>
           </div>
 
-          <Button onClick={handleImport} disabled={loading || parsed.valid.length === 0 || !productId} className="w-full gap-2 rounded-xl" size="lg">
-            {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Mengimport...</> : <><Upload className="h-4 w-4" /> Import {parsed.valid.length} akun</>}
+          <Button onClick={handleImport} disabled={loading || blocks.length === 0 || !productId} className="w-full gap-2 rounded-xl" size="lg">
+            {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Mengimport...</> : <><Upload className="h-4 w-4" /> Import {blocks.length} akun ke stok</>}
           </Button>
         </CardContent>
       </Card>
 
       <Card className="border-0 bg-muted/30 shadow-sm">
-        <CardContent className="p-4 text-sm text-muted-foreground">
-          <p className="mb-1 font-semibold text-foreground">Format yang didukung</p>
-          <pre className="rounded bg-background p-3 text-xs">{`user1@gmail.com:passw0rd
-user2@gmail.com:secret!23
-user3@yahoo.com:another-pass`}</pre>
-          <p className="mt-2">Setiap baris akan disimpan sebagai 1 akun yang siap dijual. Stok grade otomatis bertambah.</p>
+        <CardContent className="space-y-2 p-4 text-sm text-muted-foreground">
+          <p className="font-semibold text-foreground flex items-center gap-2"><FileText className="h-4 w-4" /> Format yang didukung</p>
+          <p>Tiap akun bisa berisi data apapun (ID FB, Email, Password, 2FA, Recovery Code, link profil, dll). Pemisah antar akun:</p>
+          <ul className="ml-5 list-disc space-y-1 text-xs">
+            <li><b>Otomatis</b> berdasarkan marker <code className="rounded bg-background px-1">Id Fb:</code> (untuk format Facebook)</li>
+            <li>Atau <b>baris kosong</b> antar akun (untuk format lain)</li>
+          </ul>
+          <p className="pt-2">Saat customer checkout & bayar, isi blok teks ini akan otomatis dikirim ke email mereka <b>persis seperti yang di-paste</b> (inline + attachment .txt).</p>
         </CardContent>
       </Card>
     </div>
