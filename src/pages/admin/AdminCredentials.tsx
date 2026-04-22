@@ -143,7 +143,11 @@ export default function AdminCredentials() {
             <Card key={c.id} className="border-0 shadow-sm">
               <CardContent className="flex items-center justify-between p-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-mono">{c.credentials_encrypted}</p>
+                  <p className="truncate text-sm font-mono">
+                    {c.email
+                      ? `${c.email}${c.password ? " : " + "•".repeat(Math.min(c.password.length, 6)) : ""}${c.twofa_secret ? " · 🔐" : ""}`
+                      : c.credentials_encrypted}
+                  </p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>{(c.products as any)?.name}</span>
                     <Badge variant={c.is_sold ? "destructive" : "default"} className="text-xs">
