@@ -16,7 +16,8 @@ export default function AdminCredentials() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [productId, setProductId] = useState("");
-  const [credentials, setCredentials] = useState("");
+  const [gradeId, setGradeId] = useState("");
+  const [form, setForm] = useState({ email: "", password: "", twofa_secret: "", recovery_email: "", cookies: "", notes: "" });
 
   const { data: creds, isLoading } = useQuery({
     queryKey: ["admin-credentials"],
@@ -35,18 +36,36 @@ export default function AdminCredentials() {
     },
   });
 
+  const { data: grades } = useQuery({
+    queryKey: ["admin-grades-for-cred", productId],
+    enabled: !!productId,
+    queryFn: async () => {
+      const { data } = await supabase.from("account_grades").select("id, grade").eq("product_id", productId).eq("is_active", true).order("grade");
+      return data || [];
+    },
+  });
+
   const addMutation = useMutation({
     mutationFn: async () => {
-      const lines = credentials.split("\n").map((l) => l.trim()).filter(Boolean);
-      const inserts = lines.map((c) => ({ product_id: productId, credentials_encrypted: c }));
-      const { error } = await supabase.from("account_credentials").insert(inserts);
+      if (!form.email.trim()) throw new Error("Email wajib diisi");
+      const { error } = await supabase.from("account_credentials").insert({
+        product_id: productId,
+        grade_id: gradeId || null,
+        email: form.email.trim(),
+        password: form.password.trim() || null,
+        twofa_secret: form.twofa_secret.trim() || null,
+        recovery_email: form.recovery_email.trim() || null,
+        cookies: form.cookies.trim() || null,
+        notes: form.notes.trim() || null,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Credentials ditambahkan!");
       queryClient.invalidateQueries({ queryKey: ["admin-credentials"] });
       setOpen(false);
-      setCredentials("");
+      setForm({ email: "", password: "", twofa_secret: "", recovery_email: "", cookies: "", notes: "" });
+      setGradeId("");
     },
     onError: (err: any) => toast.error(err.message),
   });
