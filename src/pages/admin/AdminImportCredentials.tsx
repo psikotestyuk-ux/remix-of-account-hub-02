@@ -89,11 +89,20 @@ export default function AdminImportCredentials() {
     if (blocks.length === 0) { toast.error("Tidak ada akun untuk diimport"); return; }
     setLoading(true);
     try {
-      const rows = blocks.map((b) => ({
-        product_id: productId,
-        grade_id: gradeId || null,
-        credentials_encrypted: b, // Stored as free-text, dikirim verbatim ke buyer
-      }));
+      const rows = blocks.map((b) => {
+        const parsed = parseAccountBlock(b);
+        return {
+          product_id: productId,
+          grade_id: gradeId || null,
+          credentials_encrypted: b, // tetap simpan raw untuk fallback / cookies panjang
+          email: parsed.email || null,
+          password: parsed.password || null,
+          twofa_secret: parsed.twofa || null,
+          recovery_email: parsed.recovery || null,
+          cookies: parsed.cookies || null,
+          notes: parsed.notes || null,
+        };
+      });
       const { error } = await supabase.from("account_credentials").insert(rows);
       if (error) throw error;
 
