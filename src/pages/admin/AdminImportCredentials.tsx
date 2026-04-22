@@ -12,6 +12,23 @@ import { toast } from "sonner";
 type Product = { id: string; name: string };
 type Grade = { id: string; grade: string; product_id: string; stock: number };
 
+// Parse 1 blok teks akun → kolom terstruktur.
+// Mendukung label fleksibel: Email/Email Fb, Pass/Password/Pass Fb, 2FA/2fa Key/2FA Code,
+// Recovery/Recovery Email/Email Pemulihan, Cookies/Cookie, Note/Catatan.
+function parseAccountBlock(block: string) {
+  const get = (re: RegExp) => {
+    const m = block.match(re);
+    return m ? m[1].trim() : "";
+  };
+  const email = get(/(?:^|\n)\s*(?:email(?:\s*fb)?|user(?:name)?|akun)\s*[:=]\s*(.+)/i);
+  const password = get(/(?:^|\n)\s*(?:pass(?:word)?(?:\s*fb)?|pwd|sandi)\s*[:=]\s*(.+)/i);
+  const twofa = get(/(?:^|\n)\s*(?:2\s*fa(?:\s*(?:key|code|secret))?|two[\s-]?factor|otp\s*key)\s*[:=]\s*(.+)/i);
+  const recovery = get(/(?:^|\n)\s*(?:recovery(?:\s*email)?|email\s*pemulihan|backup\s*email)\s*[:=]\s*(.+)/i);
+  const cookies = get(/(?:^|\n)\s*(?:cookies?|ck)\s*[:=]\s*(.+)/i);
+  const notes = get(/(?:^|\n)\s*(?:note|notes|catatan|keterangan)\s*[:=]\s*(.+)/i);
+  return { email, password, twofa, recovery, cookies, notes };
+}
+
 // Split a big pasted text into account blocks.
 // Strategy: split on blank lines OR on lines starting with "Id Fb:" / "ID FB:" markers.
 // Each non-empty block becomes 1 account.
