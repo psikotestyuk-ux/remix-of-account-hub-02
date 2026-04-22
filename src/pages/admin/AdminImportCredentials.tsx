@@ -198,12 +198,16 @@ export default function AdminImportCredentials() {
       <Card className="border-0 bg-muted/30 shadow-sm">
         <CardContent className="space-y-2 p-4 text-sm text-muted-foreground">
           <p className="font-semibold text-foreground flex items-center gap-2"><FileText className="h-4 w-4" /> Format yang didukung</p>
-          <p>Tiap akun bisa berisi data apapun (ID FB, Email, Password, 2FA, Recovery Code, link profil, dll). Pemisah antar akun:</p>
+          <p>Sistem otomatis baca tiap baris dengan label berikut (case-insensitive):</p>
           <ul className="ml-5 list-disc space-y-1 text-xs">
-            <li><b>Otomatis</b> berdasarkan marker <code className="rounded bg-background px-1">Id Fb:</code> (untuk format Facebook)</li>
-            <li>Atau <b>baris kosong</b> antar akun (untuk format lain)</li>
+            <li><code className="rounded bg-background px-1">Email:</code> / <code className="rounded bg-background px-1">Email Fb:</code> → kolom email</li>
+            <li><code className="rounded bg-background px-1">Password:</code> / <code className="rounded bg-background px-1">Pass Fb:</code> → kolom password</li>
+            <li><code className="rounded bg-background px-1">2FA:</code> / <code className="rounded bg-background px-1">2FA Key:</code> → secret 2FA</li>
+            <li><code className="rounded bg-background px-1">Recovery:</code> / <code className="rounded bg-background px-1">Backup Email:</code> → email pemulihan</li>
+            <li><code className="rounded bg-background px-1">Cookies:</code> → cookie browser</li>
+            <li><code className="rounded bg-background px-1">Note:</code> → catatan</li>
           </ul>
-          <p className="pt-2">Saat customer checkout & bayar, isi blok teks ini akan otomatis dikirim ke email mereka <b>persis seperti yang di-paste</b> (inline + attachment .txt).</p>
+          <p className="pt-2">Pemisah antar akun: <b>baris kosong</b> atau marker <code className="rounded bg-background px-1">Id Fb:</code>. Field yang tidak terdeteksi akan kosong (tidak error).</p>
         </CardContent>
       </Card>
     </div>
