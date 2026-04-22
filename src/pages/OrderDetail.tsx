@@ -10,6 +10,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
+function FieldRow({ label, icon, value, keyId, copy, copiedIdx, mono }: {
+  label: string; icon: string; value: string; keyId: string;
+  copy: (t: string, k: string) => void; copiedIdx: string | null; mono?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="flex w-24 items-center gap-1 text-xs text-muted-foreground">
+        <span>{icon}</span> {label}
+      </span>
+      <code className={`flex-1 truncate rounded bg-background px-2 py-1.5 text-xs ${mono ? "font-mono" : ""}`}>{value}</code>
+      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => copy(value, keyId)}>
+        {copiedIdx === keyId ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+      </Button>
+    </div>
+  );
+}
+
 const STATUS_MAP = {
   pending: { label: "Menunggu Verifikasi", icon: Clock, color: "bg-yellow-100 text-yellow-800" },
   paid: { label: "Pembayaran Disetujui", icon: CheckCircle, color: "bg-green-100 text-green-800" },
