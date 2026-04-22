@@ -171,9 +171,20 @@ export default function AdminImportCredentials() {
             <div className="flex-1">
               <Badge className="text-sm">{blocks.length} akun terdeteksi</Badge>
               {blocks.length > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Preview akun pertama: <span className="font-mono">{blocks[0].split("\n").slice(0, 2).join(" | ").slice(0, 80)}…</span>
-                </p>
+                <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                  <p className="font-semibold text-foreground">Preview akun pertama (auto-parsed):</p>
+                  {(() => {
+                    const p = parseAccountBlock(blocks[0]);
+                    return (
+                      <ul className="ml-2 space-y-0.5 font-mono">
+                        <li>📧 Email: <span className={p.email ? "text-success" : "text-destructive"}>{p.email || "(tidak terdeteksi)"}</span></li>
+                        <li>🔑 Password: <span className={p.password ? "text-success" : "text-destructive"}>{p.password ? "•••••" + p.password.slice(-3) : "(tidak terdeteksi)"}</span></li>
+                        <li>🔐 2FA: <span className={p.twofa ? "text-success" : "text-muted-foreground"}>{p.twofa ? "ada" : "(opsional)"}</span></li>
+                        <li>🛟 Recovery: <span className={p.recovery ? "text-success" : "text-muted-foreground"}>{p.recovery || "(opsional)"}</span></li>
+                      </ul>
+                    );
+                  })()}
+                </div>
               )}
             </div>
           </div>
