@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ function splitIntoBlocks(raw: string): string[] {
 }
 
 export default function AdminImportCredentials() {
+  const [params] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [productId, setProductId] = useState("");
@@ -39,13 +41,22 @@ export default function AdminImportCredentials() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.from("products").select("id, name").order("name").then(({ data }) => setProducts(data || []));
+    supabase.from("products").select("id, name").order("name").then(({ data }) => {
+      setProducts(data || []);
+      const qp = params.get("product");
+      if (qp && (data || []).some((p) => p.id === qp)) setProductId(qp);
+    });
   }, []);
 
   useEffect(() => {
     if (!productId) { setGrades([]); setGradeId(""); return; }
     supabase.from("account_grades").select("id, grade, product_id, stock").eq("product_id", productId).eq("is_active", true).order("grade")
-      .then(({ data }) => { setGrades((data as any) || []); setGradeId(""); });
+      .then(({ data }) => {
+        const list = (data as any) || [];
+        setGrades(list);
+        const qg = params.get("grade");
+        setGradeId(qg && list.some((g: Grade) => g.id === qg) ? qg : "");
+      });
   }, [productId]);
 
   const blocks = useMemo(() => splitIntoBlocks(text), [text]);
