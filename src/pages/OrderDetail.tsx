@@ -46,7 +46,7 @@ export default function OrderDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("account_credentials")
-        .select("id, credentials_encrypted, created_at")
+        .select("id, credentials_encrypted, email, password, twofa_secret, recovery_email, cookies, notes, created_at")
         .eq("sold_to_order", order!.id)
         .order("created_at", { ascending: true });
       if (error) throw error;
@@ -55,10 +55,23 @@ export default function OrderDetail() {
     enabled: !!order && order.payment_status === "paid" && order.order_status === "completed",
   });
 
-  const parseCred = (raw: string) => {
+  // Ambil field terstruktur jika ada, fallback parse dari credentials_encrypted
+  const getFields = (c: any) => {
+    if (c.email || c.password) {
+      return {
+        email: c.email || "",
+        password: c.password || "",
+        twofa: c.twofa_secret || "",
+        recovery: c.recovery_email || "",
+        cookies: c.cookies || "",
+        notes: c.notes || "",
+      };
+    }
+    // Fallback: data lama format "email:password"
+    const raw = c.credentials_encrypted || "";
     const idx = raw.indexOf(":");
-    if (idx < 0) return { email: raw, password: "" };
-    return { email: raw.slice(0, idx).trim(), password: raw.slice(idx + 1).trim() };
+    if (idx < 0) return { email: raw, password: "", twofa: "", recovery: "", cookies: "", notes: "" };
+    return { email: raw.slice(0, idx).trim(), password: raw.slice(idx + 1).trim(), twofa: "", recovery: "", cookies: "", notes: "" };
   };
 
   const copy = (text: string, key: string) => {
@@ -70,7 +83,19 @@ export default function OrderDetail() {
 
   const downloadAll = () => {
     if (!credentials || !order) return;
-    const lines = credentials.map((c, i) => `# Akun ${i + 1}\n${c.credentials_encrypted}`).join("\n\n");
+    const lines = credentials.map((c, i) => {
+      const f = getFields(c);
+      const parts = [
+        `# Akun ${i + 1}`,
+        f.email && `Email    : ${f.email}`,
+        f.password && `Password : ${f.password}`,
+        f.twofa && `2FA Key  : ${f.twofa}`,
+        f.recovery && `Recovery : ${f.recovery}`,
+        f.cookies && `Cookies  : ${f.cookies}`,
+        f.notes && `Notes    : ${f.notes}`,
+      ].filter(Boolean);
+      return parts.join("\n");
+    }).join("\n\n");
     const content = `# Order ${order.order_number}\n# Total akun: ${credentials.length}\n# Tanggal: ${new Date().toLocaleString("id-ID")}\n\n${lines}\n`;
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -82,9 +107,18 @@ export default function OrderDetail() {
     toast.success("File diunduh");
   };
 
-  const downloadOne = (raw: string, idx: number) => {
+  const downloadOne = (c: any, idx: number) => {
     if (!order) return;
-    const blob = new Blob([raw], { type: "text/plain;charset=utf-8" });
+    const f = getFields(c);
+    const content = [
+      f.email && `Email    : ${f.email}`,
+      f.password && `Password : ${f.password}`,
+      f.twofa && `2FA Key  : ${f.twofa}`,
+      f.recovery && `Recovery : ${f.recovery}`,
+      f.cookies && `Cookies  : ${f.cookies}`,
+      f.notes && `Notes    : ${f.notes}`,
+    ].filter(Boolean).join("\n") || c.credentials_encrypted || "";
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
