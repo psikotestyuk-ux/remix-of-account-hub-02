@@ -12,6 +12,23 @@ import { toast } from "sonner";
 type Product = { id: string; name: string };
 type Grade = { id: string; grade: string; product_id: string; stock: number };
 
+// Parse 1 blok teks akun → kolom terstruktur.
+// Mendukung label fleksibel: Email/Email Fb, Pass/Password/Pass Fb, 2FA/2fa Key/2FA Code,
+// Recovery/Recovery Email/Email Pemulihan, Cookies/Cookie, Note/Catatan.
+function parseAccountBlock(block: string) {
+  const get = (re: RegExp) => {
+    const m = block.match(re);
+    return m ? m[1].trim() : "";
+  };
+  const email = get(/(?:^|\n)\s*(?:email(?:\s*fb)?|user(?:name)?|akun)\s*[:=]\s*(.+)/i);
+  const password = get(/(?:^|\n)\s*(?:pass(?:word)?(?:\s*fb)?|pwd|sandi)\s*[:=]\s*(.+)/i);
+  const twofa = get(/(?:^|\n)\s*(?:2\s*fa(?:\s*(?:key|code|secret))?|two[\s-]?factor|otp\s*key)\s*[:=]\s*(.+)/i);
+  const recovery = get(/(?:^|\n)\s*(?:recovery(?:\s*email)?|email\s*pemulihan|backup\s*email)\s*[:=]\s*(.+)/i);
+  const cookies = get(/(?:^|\n)\s*(?:cookies?|ck)\s*[:=]\s*(.+)/i);
+  const notes = get(/(?:^|\n)\s*(?:note|notes|catatan|keterangan)\s*[:=]\s*(.+)/i);
+  return { email, password, twofa, recovery, cookies, notes };
+}
+
 // Split a big pasted text into account blocks.
 // Strategy: split on blank lines OR on lines starting with "Id Fb:" / "ID FB:" markers.
 // Each non-empty block becomes 1 account.
@@ -72,11 +89,20 @@ export default function AdminImportCredentials() {
     if (blocks.length === 0) { toast.error("Tidak ada akun untuk diimport"); return; }
     setLoading(true);
     try {
-      const rows = blocks.map((b) => ({
-        product_id: productId,
-        grade_id: gradeId || null,
-        credentials_encrypted: b, // Stored as free-text, dikirim verbatim ke buyer
-      }));
+      const rows = blocks.map((b) => {
+        const parsed = parseAccountBlock(b);
+        return {
+          product_id: productId,
+          grade_id: gradeId || null,
+          credentials_encrypted: b, // tetap simpan raw untuk fallback / cookies panjang
+          email: parsed.email || null,
+          password: parsed.password || null,
+          twofa_secret: parsed.twofa || null,
+          recovery_email: parsed.recovery || null,
+          cookies: parsed.cookies || null,
+          notes: parsed.notes || null,
+        };
+      });
       const { error } = await supabase.from("account_credentials").insert(rows);
       if (error) throw error;
 
@@ -145,9 +171,20 @@ export default function AdminImportCredentials() {
             <div className="flex-1">
               <Badge className="text-sm">{blocks.length} akun terdeteksi</Badge>
               {blocks.length > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Preview akun pertama: <span className="font-mono">{blocks[0].split("\n").slice(0, 2).join(" | ").slice(0, 80)}…</span>
-                </p>
+                <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                  <p className="font-semibold text-foreground">Preview akun pertama (auto-parsed):</p>
+                  {(() => {
+                    const p = parseAccountBlock(blocks[0]);
+                    return (
+                      <ul className="ml-2 space-y-0.5 font-mono">
+                        <li>📧 Email: <span className={p.email ? "text-success" : "text-destructive"}>{p.email || "(tidak terdeteksi)"}</span></li>
+                        <li>🔑 Password: <span className={p.password ? "text-success" : "text-destructive"}>{p.password ? "•••••" + p.password.slice(-3) : "(tidak terdeteksi)"}</span></li>
+                        <li>🔐 2FA: <span className={p.twofa ? "text-success" : "text-muted-foreground"}>{p.twofa ? "ada" : "(opsional)"}</span></li>
+                        <li>🛟 Recovery: <span className={p.recovery ? "text-success" : "text-muted-foreground"}>{p.recovery || "(opsional)"}</span></li>
+                      </ul>
+                    );
+                  })()}
+                </div>
               )}
             </div>
           </div>
@@ -161,12 +198,16 @@ export default function AdminImportCredentials() {
       <Card className="border-0 bg-muted/30 shadow-sm">
         <CardContent className="space-y-2 p-4 text-sm text-muted-foreground">
           <p className="font-semibold text-foreground flex items-center gap-2"><FileText className="h-4 w-4" /> Format yang didukung</p>
-          <p>Tiap akun bisa berisi data apapun (ID FB, Email, Password, 2FA, Recovery Code, link profil, dll). Pemisah antar akun:</p>
+          <p>Sistem otomatis baca tiap baris dengan label berikut (case-insensitive):</p>
           <ul className="ml-5 list-disc space-y-1 text-xs">
-            <li><b>Otomatis</b> berdasarkan marker <code className="rounded bg-background px-1">Id Fb:</code> (untuk format Facebook)</li>
-            <li>Atau <b>baris kosong</b> antar akun (untuk format lain)</li>
+            <li><code className="rounded bg-background px-1">Email:</code> / <code className="rounded bg-background px-1">Email Fb:</code> → kolom email</li>
+            <li><code className="rounded bg-background px-1">Password:</code> / <code className="rounded bg-background px-1">Pass Fb:</code> → kolom password</li>
+            <li><code className="rounded bg-background px-1">2FA:</code> / <code className="rounded bg-background px-1">2FA Key:</code> → secret 2FA</li>
+            <li><code className="rounded bg-background px-1">Recovery:</code> / <code className="rounded bg-background px-1">Backup Email:</code> → email pemulihan</li>
+            <li><code className="rounded bg-background px-1">Cookies:</code> → cookie browser</li>
+            <li><code className="rounded bg-background px-1">Note:</code> → catatan</li>
           </ul>
-          <p className="pt-2">Saat customer checkout & bayar, isi blok teks ini akan otomatis dikirim ke email mereka <b>persis seperti yang di-paste</b> (inline + attachment .txt).</p>
+          <p className="pt-2">Pemisah antar akun: <b>baris kosong</b> atau marker <code className="rounded bg-background px-1">Id Fb:</code>. Field yang tidak terdeteksi akan kosong (tidak error).</p>
         </CardContent>
       </Card>
     </div>

@@ -10,6 +10,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
+function FieldRow({ label, icon, value, keyId, copy, copiedIdx, mono }: {
+  label: string; icon: string; value: string; keyId: string;
+  copy: (t: string, k: string) => void; copiedIdx: string | null; mono?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="flex w-24 items-center gap-1 text-xs text-muted-foreground">
+        <span>{icon}</span> {label}
+      </span>
+      <code className={`flex-1 truncate rounded bg-background px-2 py-1.5 text-xs ${mono ? "font-mono" : ""}`}>{value}</code>
+      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => copy(value, keyId)}>
+        {copiedIdx === keyId ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+      </Button>
+    </div>
+  );
+}
+
 const STATUS_MAP = {
   pending: { label: "Menunggu Verifikasi", icon: Clock, color: "bg-yellow-100 text-yellow-800" },
   paid: { label: "Pembayaran Disetujui", icon: CheckCircle, color: "bg-green-100 text-green-800" },
@@ -46,7 +63,7 @@ export default function OrderDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("account_credentials")
-        .select("id, credentials_encrypted, created_at")
+        .select("id, credentials_encrypted, email, password, twofa_secret, recovery_email, cookies, notes, created_at")
         .eq("sold_to_order", order!.id)
         .order("created_at", { ascending: true });
       if (error) throw error;
@@ -55,10 +72,23 @@ export default function OrderDetail() {
     enabled: !!order && order.payment_status === "paid" && order.order_status === "completed",
   });
 
-  const parseCred = (raw: string) => {
+  // Ambil field terstruktur jika ada, fallback parse dari credentials_encrypted
+  const getFields = (c: any) => {
+    if (c.email || c.password) {
+      return {
+        email: c.email || "",
+        password: c.password || "",
+        twofa: c.twofa_secret || "",
+        recovery: c.recovery_email || "",
+        cookies: c.cookies || "",
+        notes: c.notes || "",
+      };
+    }
+    // Fallback: data lama format "email:password"
+    const raw = c.credentials_encrypted || "";
     const idx = raw.indexOf(":");
-    if (idx < 0) return { email: raw, password: "" };
-    return { email: raw.slice(0, idx).trim(), password: raw.slice(idx + 1).trim() };
+    if (idx < 0) return { email: raw, password: "", twofa: "", recovery: "", cookies: "", notes: "" };
+    return { email: raw.slice(0, idx).trim(), password: raw.slice(idx + 1).trim(), twofa: "", recovery: "", cookies: "", notes: "" };
   };
 
   const copy = (text: string, key: string) => {
@@ -70,7 +100,19 @@ export default function OrderDetail() {
 
   const downloadAll = () => {
     if (!credentials || !order) return;
-    const lines = credentials.map((c, i) => `# Akun ${i + 1}\n${c.credentials_encrypted}`).join("\n\n");
+    const lines = credentials.map((c, i) => {
+      const f = getFields(c);
+      const parts = [
+        `# Akun ${i + 1}`,
+        f.email && `Email    : ${f.email}`,
+        f.password && `Password : ${f.password}`,
+        f.twofa && `2FA Key  : ${f.twofa}`,
+        f.recovery && `Recovery : ${f.recovery}`,
+        f.cookies && `Cookies  : ${f.cookies}`,
+        f.notes && `Notes    : ${f.notes}`,
+      ].filter(Boolean);
+      return parts.join("\n");
+    }).join("\n\n");
     const content = `# Order ${order.order_number}\n# Total akun: ${credentials.length}\n# Tanggal: ${new Date().toLocaleString("id-ID")}\n\n${lines}\n`;
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -82,9 +124,18 @@ export default function OrderDetail() {
     toast.success("File diunduh");
   };
 
-  const downloadOne = (raw: string, idx: number) => {
+  const downloadOne = (c: any, idx: number) => {
     if (!order) return;
-    const blob = new Blob([raw], { type: "text/plain;charset=utf-8" });
+    const f = getFields(c);
+    const content = [
+      f.email && `Email    : ${f.email}`,
+      f.password && `Password : ${f.password}`,
+      f.twofa && `2FA Key  : ${f.twofa}`,
+      f.recovery && `Recovery : ${f.recovery}`,
+      f.cookies && `Cookies  : ${f.cookies}`,
+      f.notes && `Notes    : ${f.notes}`,
+    ].filter(Boolean).join("\n") || c.credentials_encrypted || "";
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -217,7 +268,7 @@ export default function OrderDetail() {
               </div>
               <div className="space-y-3">
                 {credentials.map((c, idx) => {
-                  const { email, password } = parseCred(c.credentials_encrypted);
+                  const f = getFields(c);
                   return (
                     <div key={c.id} className="rounded-xl border bg-muted/30 p-4">
                       <div className="mb-3 flex items-center justify-between">
@@ -226,29 +277,29 @@ export default function OrderDetail() {
                           size="sm"
                           variant="ghost"
                           className="h-7 gap-1 text-xs"
-                          onClick={() => downloadOne(c.credentials_encrypted, idx)}
+                          onClick={() => downloadOne(c, idx)}
                         >
                           <Download className="h-3 w-3" /> .txt
                         </Button>
                       </div>
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="w-20 text-xs text-muted-foreground">Email</span>
-                          <code className="flex-1 truncate rounded bg-background px-2 py-1.5 text-xs">{email}</code>
-                          <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => copy(email, `e${idx}`)}>
-                            {copiedIdx === `e${idx}` ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                          </Button>
-                        </div>
-                        {password && (
-                          <div className="flex items-center gap-2">
-                            <span className="flex w-20 items-center gap-1 text-xs text-muted-foreground">
-                              <Lock className="h-3 w-3" /> Pass
-                            </span>
-                            <code className="flex-1 truncate rounded bg-background px-2 py-1.5 text-xs">{password}</code>
-                            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => copy(password, `p${idx}`)}>
-                              {copiedIdx === `p${idx}` ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                            </Button>
-                          </div>
+                        {f.email && (
+                          <FieldRow label="Email" icon="📧" value={f.email} keyId={`e${idx}`} copy={copy} copiedIdx={copiedIdx} />
+                        )}
+                        {f.password && (
+                          <FieldRow label="Password" icon="🔑" value={f.password} keyId={`p${idx}`} copy={copy} copiedIdx={copiedIdx} />
+                        )}
+                        {f.twofa && (
+                          <FieldRow label="2FA" icon="🔐" value={f.twofa} keyId={`t${idx}`} copy={copy} copiedIdx={copiedIdx} mono />
+                        )}
+                        {f.recovery && (
+                          <FieldRow label="Recovery" icon="🛟" value={f.recovery} keyId={`r${idx}`} copy={copy} copiedIdx={copiedIdx} />
+                        )}
+                        {f.cookies && (
+                          <FieldRow label="Cookies" icon="🍪" value={f.cookies} keyId={`c${idx}`} copy={copy} copiedIdx={copiedIdx} />
+                        )}
+                        {f.notes && (
+                          <p className="rounded-md bg-background/60 p-2 text-xs italic text-muted-foreground">📝 {f.notes}</p>
                         )}
                       </div>
                     </div>
