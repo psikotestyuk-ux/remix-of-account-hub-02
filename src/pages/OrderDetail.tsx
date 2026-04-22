@@ -251,7 +251,7 @@ export default function OrderDetail() {
               </div>
               <div className="space-y-3">
                 {credentials.map((c, idx) => {
-                  const { email, password } = parseCred(c.credentials_encrypted);
+                  const f = getFields(c);
                   return (
                     <div key={c.id} className="rounded-xl border bg-muted/30 p-4">
                       <div className="mb-3 flex items-center justify-between">
@@ -260,29 +260,29 @@ export default function OrderDetail() {
                           size="sm"
                           variant="ghost"
                           className="h-7 gap-1 text-xs"
-                          onClick={() => downloadOne(c.credentials_encrypted, idx)}
+                          onClick={() => downloadOne(c, idx)}
                         >
                           <Download className="h-3 w-3" /> .txt
                         </Button>
                       </div>
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="w-20 text-xs text-muted-foreground">Email</span>
-                          <code className="flex-1 truncate rounded bg-background px-2 py-1.5 text-xs">{email}</code>
-                          <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => copy(email, `e${idx}`)}>
-                            {copiedIdx === `e${idx}` ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                          </Button>
-                        </div>
-                        {password && (
-                          <div className="flex items-center gap-2">
-                            <span className="flex w-20 items-center gap-1 text-xs text-muted-foreground">
-                              <Lock className="h-3 w-3" /> Pass
-                            </span>
-                            <code className="flex-1 truncate rounded bg-background px-2 py-1.5 text-xs">{password}</code>
-                            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => copy(password, `p${idx}`)}>
-                              {copiedIdx === `p${idx}` ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                            </Button>
-                          </div>
+                        {f.email && (
+                          <FieldRow label="Email" icon="📧" value={f.email} keyId={`e${idx}`} copy={copy} copiedIdx={copiedIdx} />
+                        )}
+                        {f.password && (
+                          <FieldRow label="Password" icon="🔑" value={f.password} keyId={`p${idx}`} copy={copy} copiedIdx={copiedIdx} />
+                        )}
+                        {f.twofa && (
+                          <FieldRow label="2FA" icon="🔐" value={f.twofa} keyId={`t${idx}`} copy={copy} copiedIdx={copiedIdx} mono />
+                        )}
+                        {f.recovery && (
+                          <FieldRow label="Recovery" icon="🛟" value={f.recovery} keyId={`r${idx}`} copy={copy} copiedIdx={copiedIdx} />
+                        )}
+                        {f.cookies && (
+                          <FieldRow label="Cookies" icon="🍪" value={f.cookies} keyId={`c${idx}`} copy={copy} copiedIdx={copiedIdx} />
+                        )}
+                        {f.notes && (
+                          <p className="rounded-md bg-background/60 p-2 text-xs italic text-muted-foreground">📝 {f.notes}</p>
                         )}
                       </div>
                     </div>
