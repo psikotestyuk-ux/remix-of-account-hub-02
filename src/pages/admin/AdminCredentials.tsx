@@ -93,21 +93,38 @@ export default function AdminCredentials() {
           <DialogContent>
             <DialogHeader><DialogTitle>Tambah Credentials</DialogTitle></DialogHeader>
             <form onSubmit={(e) => { e.preventDefault(); addMutation.mutate(); }} className="space-y-4">
-              <div>
-                <Label>Produk</Label>
-                <Select value={productId} onValueChange={setProductId}>
-                  <SelectTrigger><SelectValue placeholder="Pilih produk" /></SelectTrigger>
-                  <SelectContent>
-                    {products?.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Produk *</Label>
+                  <Select value={productId} onValueChange={(v) => { setProductId(v); setGradeId(""); }}>
+                    <SelectTrigger><SelectValue placeholder="Pilih produk" /></SelectTrigger>
+                    <SelectContent>
+                      {products?.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Grade</Label>
+                  <Select value={gradeId} onValueChange={setGradeId} disabled={!productId || !grades?.length}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      {grades?.map((g: any) => (
+                        <SelectItem key={g.id} value={g.id}>Grade {g.grade}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div>
-                <Label>Credentials (satu per baris)</Label>
-                <Textarea value={credentials} onChange={(e) => setCredentials(e.target.value)} rows={6} placeholder="email:password&#10;email2:password2" />
+              <div><Label>Email *</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="user@example.com" required /></div>
+              <div><Label>Password</Label><Input value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Pass123!" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>2FA Key</Label><Input value={form.twofa_secret} onChange={(e) => setForm({ ...form, twofa_secret: e.target.value })} placeholder="JBSWY3DPEHPK..." className="font-mono text-xs" /></div>
+                <div><Label>Recovery email</Label><Input value={form.recovery_email} onChange={(e) => setForm({ ...form, recovery_email: e.target.value })} placeholder="backup@gmail.com" /></div>
               </div>
+              <div><Label>Cookies (opsional)</Label><Textarea value={form.cookies} onChange={(e) => setForm({ ...form, cookies: e.target.value })} rows={2} className="font-mono text-xs" /></div>
+              <div><Label>Catatan (opsional)</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Mis: umur 2 tahun, aktif" /></div>
               <Button type="submit" disabled={addMutation.isPending || !productId} className="w-full">
                 {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Simpan"}
               </Button>
