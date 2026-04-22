@@ -16,33 +16,51 @@ export type Database = {
     Tables: {
       account_credentials: {
         Row: {
+          cookies: string | null
           created_at: string
-          credentials_encrypted: string
+          credentials_encrypted: string | null
+          email: string | null
           grade_id: string | null
           id: string
           is_sold: boolean
+          notes: string | null
+          password: string | null
           product_id: string
+          recovery_email: string | null
           sold_to_order: string | null
+          twofa_secret: string | null
           updated_at: string
         }
         Insert: {
+          cookies?: string | null
           created_at?: string
-          credentials_encrypted: string
+          credentials_encrypted?: string | null
+          email?: string | null
           grade_id?: string | null
           id?: string
           is_sold?: boolean
+          notes?: string | null
+          password?: string | null
           product_id: string
+          recovery_email?: string | null
           sold_to_order?: string | null
+          twofa_secret?: string | null
           updated_at?: string
         }
         Update: {
+          cookies?: string | null
           created_at?: string
-          credentials_encrypted?: string
+          credentials_encrypted?: string | null
+          email?: string | null
           grade_id?: string | null
           id?: string
           is_sold?: boolean
+          notes?: string | null
+          password?: string | null
           product_id?: string
+          recovery_email?: string | null
           sold_to_order?: string | null
+          twofa_secret?: string | null
           updated_at?: string
         }
         Relationships: [
