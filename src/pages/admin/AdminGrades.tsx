@@ -58,6 +58,23 @@ export default function AdminGrades() {
     },
   });
 
+  // Hitung stok tersedia (belum terjual) per grade dari account_credentials
+  const { data: availableByGrade } = useQuery({
+    queryKey: ["admin-grades-available"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("account_credentials").select("grade_id, is_sold");
+      if (error) throw error;
+      const map: Record<string, { available: number; sold: number }> = {};
+      (data || []).forEach((c: any) => {
+        if (!c.grade_id) return;
+        if (!map[c.grade_id]) map[c.grade_id] = { available: 0, sold: 0 };
+        if (c.is_sold) map[c.grade_id].sold += 1;
+        else map[c.grade_id].available += 1;
+      });
+      return map;
+    },
+  });
+
   const saveGrade = useMutation({
     mutationFn: async () => {
       if (gEditId) {
@@ -162,9 +179,20 @@ export default function AdminGrades() {
                     {!g.is_active && <Badge variant="secondary">Nonaktif</Badge>}
                   </div>
                   {g.description && <p className="text-xs text-muted-foreground">{g.description}</p>}
-                  <p className="text-sm">{formatRupiah(g.base_price)} • Stok: {g.stock}</p>
+                  <p className="text-sm">
+                    {formatRupiah(g.base_price)}
+                    {" • "}
+                    <span className="text-success font-semibold">Tersedia: {availableByGrade?.[g.id]?.available ?? 0}</span>
+                    {" • "}
+                    <span className="text-muted-foreground">Terjual: {availableByGrade?.[g.id]?.sold ?? 0}</span>
+                  </p>
                 </div>
                 <div className="flex gap-1">
+                  <Button asChild size="sm" variant="default" className="h-8 gap-1">
+                    <Link to={`/admin/import?product=${g.product_id}&grade=${g.id}`}>
+                      <Upload className="h-3 w-3" /> Import
+                    </Link>
+                  </Button>
                   <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => {
                     setGEditId(g.id);
                     setGForm({ product_id: g.product_id, grade: g.grade, description: g.description || "", base_price: g.base_price, stock: g.stock, is_active: g.is_active });
