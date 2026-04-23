@@ -93,11 +93,11 @@ export default function AdminUsers() {
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Terverifikasi</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-green-600">{stats.verified}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-primary">{stats.verified}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Belum Verifikasi</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-amber-600">{stats.unverified}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-destructive">{stats.unverified}</div></CardContent>
         </Card>
       </div>
 
@@ -153,14 +153,14 @@ export default function AdminUsers() {
                       </TableCell>
                       <TableCell>
                         {verified ? (
-                          <Badge className="gap-1 bg-green-100 text-green-700 hover:bg-green-100"><CheckCircle2 className="h-3 w-3" /> Verified</Badge>
+                          <Badge className="gap-1"><CheckCircle2 className="h-3 w-3" /> Verified</Badge>
                         ) : (
-                          <Badge variant="secondary" className="gap-1 bg-amber-100 text-amber-700 hover:bg-amber-100"><XCircle className="h-3 w-3" /> Pending</Badge>
+                          <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" /> Pending</Badge>
                         )}
                       </TableCell>
                       <TableCell><span className="text-xs capitalize">{u.provider || "—"}</span></TableCell>
                       <TableCell className="text-xs text-muted-foreground">{fmt(u.created_at)}</TableCell>
-                      <TableCell className="text-xs">{verified ? fmt(u.email_confirmed_at) : <span className="text-amber-600">Belum</span>}</TableCell>
+                      <TableCell className="text-xs">{verified ? fmt(u.email_confirmed_at) : <span className="text-destructive">Belum</span>}</TableCell>
                       <TableCell className="text-xs">
                         {resend ? (
                           <span className="inline-flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" /> {fmt(resend)}</span>
