@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, Package, ShoppingCart, Key, LogOut, Layers, Tag, Upload } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Key, LogOut, Layers, Tag, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { to: "/admin/orders", icon: ShoppingCart, label: "Orders" },
   { to: "/admin/credentials", icon: Key, label: "Credentials" },
   { to: "/admin/import", icon: Upload, label: "Import TXT" },
+  { to: "/admin/users", icon: Users, label: "Users" },
 ];
 
 export default function AdminLayout() {
