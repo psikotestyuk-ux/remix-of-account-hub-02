@@ -46,11 +46,19 @@ export default function Auth() {
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: parsed.data.email, password: parsed.data.password });
-      if (error) throw error;
+      if (error) {
+        const msg = error.message?.toLowerCase() || "";
+        if (msg.includes("not confirmed") || msg.includes("confirm")) {
+          toast.error("Email belum diverifikasi. Cek inbox kamu.");
+          navigate(`/verify-email?email=${encodeURIComponent(parsed.data.email)}`);
+          return;
+        }
+        throw error;
+      }
       toast.success("Selamat datang!");
       navigate(redirect, { replace: true });
     } catch (err: any) {
-      toast.error(err.message?.includes("Invalid") ? "Email/password salah atau email belum diverifikasi" : err.message);
+      toast.error(err.message?.includes("Invalid") ? "Email/password salah" : err.message);
     } finally { setLoading(false); }
   };
 
@@ -64,13 +72,13 @@ export default function Auth() {
         email: parsed.data.email,
         password: parsed.data.password,
         options: {
-          emailRedirectTo: `${window.location.origin}${redirect}`,
+          emailRedirectTo: `${window.location.origin}/verify-email`,
           data: { full_name: parsed.data.full_name },
         },
       });
       if (error) throw error;
-      setEmailSent(true);
       toast.success("Cek email untuk verifikasi akun");
+      navigate(`/verify-email?email=${encodeURIComponent(parsed.data.email)}`, { replace: true });
     } catch (err: any) {
       toast.error(err.message);
     } finally { setLoading(false); }
