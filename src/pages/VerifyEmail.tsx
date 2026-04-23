@@ -86,7 +86,7 @@ export default function VerifyEmail() {
 
           {status === "success" && (
             <>
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 text-green-600">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <CheckCircle2 className="h-8 w-8" />
               </div>
               <h1 className="mb-2 text-xl font-bold">Email terverifikasi!</h1>
