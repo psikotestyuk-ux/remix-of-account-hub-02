@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle2, XCircle, RefreshCw, Search, Mail } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw, Search, Mail, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 type AdminUser = {
@@ -136,11 +137,12 @@ export default function AdminUsers() {
                   <TableHead>Verifikasi</TableHead>
                   <TableHead>Resend Terakhir</TableHead>
                   <TableHead>Login Terakhir</TableHead>
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 && (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Tidak ada user.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Tidak ada user.</TableCell></TableRow>
                 )}
                 {filtered.map((u) => {
                   const verified = !!u.email_confirmed_at;
@@ -169,6 +171,11 @@ export default function AdminUsers() {
                         )}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{fmt(u.last_sign_in_at)}</TableCell>
+                      <TableCell>
+                        <Button asChild size="sm" variant="ghost">
+                          <Link to={`/admin/users/${u.id}`}><ExternalLink className="h-4 w-4" /></Link>
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
