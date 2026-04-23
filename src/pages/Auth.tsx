@@ -156,6 +156,11 @@ export default function Auth() {
                   <Label htmlFor="lpass">Password</Label>
                   <Input id="lpass" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
                 </div>
+                <div className="flex justify-end">
+                  <button type="button" onClick={() => { setForgotEmail(form.email); setForgotOpen(true); }} className="text-xs font-medium text-primary hover:underline">
+                    Lupa password?
+                  </button>
+                </div>
                 <Button type="submit" disabled={loading} className="w-full gap-2 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90">
                   {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Masuk...</> : "Masuk"}
                 </Button>
