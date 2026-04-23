@@ -15,6 +15,7 @@ import OrderSuccess from "./pages/OrderSuccess";
 import OrderDetail from "./pages/OrderDetail";
 import OrdersLookup from "./pages/OrdersLookup";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import TopUp from "./pages/TopUp";
 import Wallet from "./pages/Wallet";
@@ -58,6 +59,7 @@ const App = () => (
           <Route path="/order/:orderNumber" element={<PublicLayout><OrderDetail /></PublicLayout>} />
           <Route path="/orders-lookup" element={<PublicLayout><OrdersLookup /></PublicLayout>} />
           <Route path="/auth" element={<PublicLayout><Auth /></PublicLayout>} />
+          <Route path="/reset-password" element={<PublicLayout><ResetPassword /></PublicLayout>} />
           <Route path="/profile" element={<PublicLayout><Profile /></PublicLayout>} />
           <Route path="/topup" element={<PublicLayout><TopUp /></PublicLayout>} />
           <Route path="/wallet" element={<PublicLayout><Wallet /></PublicLayout>} />
