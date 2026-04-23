@@ -137,11 +137,12 @@ export default function AdminUsers() {
                   <TableHead>Verifikasi</TableHead>
                   <TableHead>Resend Terakhir</TableHead>
                   <TableHead>Login Terakhir</TableHead>
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 && (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Tidak ada user.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Tidak ada user.</TableCell></TableRow>
                 )}
                 {filtered.map((u) => {
                   const verified = !!u.email_confirmed_at;
