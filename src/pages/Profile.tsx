@@ -26,6 +26,11 @@ export default function Profile() {
   useEffect(() => {
     if (!authLoading && !user) { navigate("/auth?redirect=/profile"); return; }
     if (!user) return;
+    // Guard: blokir akses jika email belum diverifikasi
+    if (!user.email_confirmed_at && user.app_metadata?.provider === "email") {
+      navigate(`/verify-email?email=${encodeURIComponent(user.email || "")}`, { replace: true });
+      return;
+    }
     (async () => {
       const [{ data: p }, { data: t }, { data: o }] = await Promise.all([
         supabase.from("profiles").select("full_name, phone, country").eq("user_id", user.id).maybeSingle(),
