@@ -16,6 +16,7 @@ import OrderDetail from "./pages/OrderDetail";
 import OrdersLookup from "./pages/OrdersLookup";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
+import VerifyEmail from "./pages/VerifyEmail";
 import Profile from "./pages/Profile";
 import TopUp from "./pages/TopUp";
 import Wallet from "./pages/Wallet";
@@ -60,6 +61,7 @@ const App = () => (
           <Route path="/orders-lookup" element={<PublicLayout><OrdersLookup /></PublicLayout>} />
           <Route path="/auth" element={<PublicLayout><Auth /></PublicLayout>} />
           <Route path="/reset-password" element={<PublicLayout><ResetPassword /></PublicLayout>} />
+          <Route path="/verify-email" element={<PublicLayout><VerifyEmail /></PublicLayout>} />
           <Route path="/profile" element={<PublicLayout><Profile /></PublicLayout>} />
           <Route path="/topup" element={<PublicLayout><TopUp /></PublicLayout>} />
           <Route path="/wallet" element={<PublicLayout><Wallet /></PublicLayout>} />
