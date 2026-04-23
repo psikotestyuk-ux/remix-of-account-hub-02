@@ -75,6 +75,40 @@ export default function Auth() {
     } finally { setLoading(false); }
   };
 
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: `${window.location.origin}${redirect}`,
+      });
+      if (result.error) throw result.error;
+      if (!result.redirected) {
+        toast.success("Selamat datang!");
+        navigate(redirect, { replace: true });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Gagal login dengan Google");
+    } finally { setGoogleLoading(false); }
+  };
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = z.string().email().safeParse(forgotEmail.trim());
+    if (!parsed.success) { toast.error("Email tidak valid"); return; }
+    setForgotLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Link reset password sudah dikirim ke email kamu");
+      setForgotOpen(false);
+      setForgotEmail("");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally { setForgotLoading(false); }
+  };
+
   if (emailSent) {
     return (
       <div className="flex min-h-[80vh] items-center justify-center px-4">
