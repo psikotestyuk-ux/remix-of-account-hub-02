@@ -30,6 +30,7 @@ import AdminGrades from "./pages/admin/AdminGrades";
 import AdminPromos from "./pages/admin/AdminPromos";
 import AdminImportCredentials from "./pages/admin/AdminImportCredentials";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -76,6 +77,7 @@ const App = () => (
             <Route path="credentials" element={<AdminCredentials />} />
             <Route path="import" element={<AdminImportCredentials />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="users/:id" element={<AdminUserDetail />} />
           </Route>
           <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
         </Routes>

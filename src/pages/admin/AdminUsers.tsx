@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle2, XCircle, RefreshCw, Search, Mail } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw, Search, Mail, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 type AdminUser = {
@@ -169,6 +170,11 @@ export default function AdminUsers() {
                         )}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{fmt(u.last_sign_in_at)}</TableCell>
+                      <TableCell>
+                        <Button asChild size="sm" variant="ghost">
+                          <Link to={`/admin/users/${u.id}`}><ExternalLink className="h-4 w-4" /></Link>
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
