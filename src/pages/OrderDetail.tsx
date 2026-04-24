@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Copy, Check, Download, Lock, KeyRound } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef, useState } from "react";
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Copy, Check, Download, Lock, KeyRound, Upload, Loader2, FileImage } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatRupiah, CATEGORY_EMOJI } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 function FieldRow({ label, icon, value, keyId, copy, copiedIdx, mono }: {
   label: string; icon: string; value: string; keyId: string;
