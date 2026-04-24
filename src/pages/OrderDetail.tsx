@@ -319,6 +319,17 @@ export default function OrderDetail() {
                       <span className="flex-1 truncate">{previewFile.name}</span>
                       <span className="text-muted-foreground">{(previewFile.size / 1024).toFixed(0)} KB</span>
                     </div>
+                    {uploadStage !== "idle" && (
+                      <div className="space-y-1">
+                        <Progress value={uploadProgress} className="h-2" />
+                        <p className="text-xs text-muted-foreground">
+                          {uploadStage === "uploading" && `Mengunggah file... ${Math.round(uploadProgress)}%`}
+                          {uploadStage === "saving" && "Menyimpan ke pesanan..."}
+                          {uploadStage === "success" && "✅ Berhasil terkirim!"}
+                          {uploadStage === "error" && "❌ Gagal mengirim, coba lagi."}
+                        </p>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <Button
                         size="sm"
