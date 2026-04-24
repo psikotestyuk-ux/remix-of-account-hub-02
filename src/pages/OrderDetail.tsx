@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -49,6 +50,8 @@ export default function OrderDetail() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState<"idle" | "uploading" | "saving" | "success" | "error">("idle");
 
   const uploadProof = async (file: File) => {
     if (!user || !order) return;
@@ -63,7 +66,21 @@ export default function OrderDetail() {
       toast.error("Ukuran maksimal 5 MB");
       return;
     }
+    // Rate limit sederhana (per browser, per order): 1 upload / 30 detik
+    const rateKey = `proof-upload:${order.id}`;
+    const last = Number(localStorage.getItem(rateKey) || 0);
+    if (Date.now() - last < 30_000) {
+      const wait = Math.ceil((30_000 - (Date.now() - last)) / 1000);
+      toast.error(`Tunggu ${wait} detik sebelum kirim ulang.`);
+      return;
+    }
     setUploading(true);
+    setUploadStage("uploading");
+    setUploadProgress(0);
+    // Progress simulasi (Supabase JS SDK belum expose progress event resmi)
+    const progressTimer = setInterval(() => {
+      setUploadProgress((p) => (p < 85 ? p + Math.random() * 12 : p));
+    }, 250);
     try {
       // Path WAJIB diawali user_id agar RLS storage lulus
       const ext = file.name.split(".").pop() || "bin";
@@ -73,6 +90,9 @@ export default function OrderDetail() {
         .from("payment-proofs")
         .upload(path, file, { contentType: file.type, upsert: false });
       if (upErr) throw upErr;
+      clearInterval(progressTimer);
+      setUploadProgress(92);
+      setUploadStage("saving");
 
       // Update order
       const { error: updErr } = await supabase
@@ -85,10 +105,20 @@ export default function OrderDetail() {
         throw updErr;
       }
 
+      setUploadProgress(100);
+      setUploadStage("success");
+      localStorage.setItem(rateKey, String(Date.now()));
       toast.success("Bukti terkirim! Menunggu verifikasi admin.");
-      setPreviewFile(null);
-      queryClient.invalidateQueries({ queryKey: ["order", orderNumber] });
+      setTimeout(() => {
+        setPreviewFile(null);
+        setUploadStage("idle");
+        setUploadProgress(0);
+        queryClient.invalidateQueries({ queryKey: ["order", orderNumber] });
+      }, 800);
     } catch (err: any) {
+      clearInterval(progressTimer);
+      setUploadStage("error");
+      setUploadProgress(0);
       toast.error("Gagal upload: " + (err.message || "unknown"));
     } finally {
       setUploading(false);
@@ -289,6 +319,17 @@ export default function OrderDetail() {
                       <span className="flex-1 truncate">{previewFile.name}</span>
                       <span className="text-muted-foreground">{(previewFile.size / 1024).toFixed(0)} KB</span>
                     </div>
+                    {uploadStage !== "idle" && (
+                      <div className="space-y-1">
+                        <Progress value={uploadProgress} className="h-2" />
+                        <p className="text-xs text-muted-foreground">
+                          {uploadStage === "uploading" && `Mengunggah file... ${Math.round(uploadProgress)}%`}
+                          {uploadStage === "saving" && "Menyimpan ke pesanan..."}
+                          {uploadStage === "success" && "✅ Berhasil terkirim!"}
+                          {uploadStage === "error" && "❌ Gagal mengirim, coba lagi."}
+                        </p>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <Button
                         size="sm"
