@@ -29,6 +29,31 @@ function FieldRow({ label, icon, value, keyId, copy, copiedIdx, mono }: {
   );
 }
 
+function ProofInfoBox({ tone, message, proofPath, uploadedAt }: {
+  tone: "pending" | "success";
+  message: string;
+  proofPath: string;
+  uploadedAt: string | null;
+}) {
+  const fileName = proofPath.split("/").pop() || proofPath;
+  const dateText = uploadedAt
+    ? new Date(uploadedAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })
+    : "-";
+  const toneClass = tone === "pending"
+    ? "bg-yellow-50 text-yellow-900 border-yellow-200"
+    : "bg-green-50 text-green-900 border-green-200";
+  return (
+    <div className={`space-y-2 rounded-xl border p-4 text-sm ${toneClass}`}>
+      <p>{message}</p>
+      <div className="flex items-center gap-2 rounded-lg bg-background/70 p-2 text-xs">
+        <FileImage className="h-4 w-4 shrink-0" />
+        <code className="flex-1 truncate font-mono">{fileName}</code>
+      </div>
+      <p className="text-xs opacity-80">📅 Diunggah: {dateText}</p>
+    </div>
+  );
+}
+
 const STATUS_MAP = {
   pending: { label: "Menunggu Verifikasi", icon: Clock, color: "bg-yellow-100 text-yellow-800" },
   paid: { label: "Pembayaran Disetujui", icon: CheckCircle, color: "bg-green-100 text-green-800" },
@@ -139,7 +164,19 @@ export default function OrderDetail() {
         o.grade_id ? supabase.from("account_grades").select("grade").eq("id", o.grade_id).maybeSingle() : Promise.resolve({ data: null }),
         o.package_id ? supabase.from("packages").select("name, quantity").eq("id", o.package_id).maybeSingle() : Promise.resolve({ data: null }),
       ]);
-      return { ...o, products: prodRes.data, account_grades: gradeRes.data, packages: pkgRes.data };
+      // Ambil tanggal upload bukti (tidak di-return oleh RPC)
+      const { data: extra } = await supabase
+        .from("orders")
+        .select("payment_proof_uploaded_at")
+        .eq("id", o.id)
+        .maybeSingle();
+      return {
+        ...o,
+        products: prodRes.data,
+        account_grades: gradeRes.data,
+        packages: pkgRes.data,
+        payment_proof_uploaded_at: extra?.payment_proof_uploaded_at ?? null,
+      };
     },
     enabled: !!orderNumber,
   });
@@ -291,9 +328,20 @@ export default function OrderDetail() {
             </div>
 
             {order.payment_status === "pending" && order.payment_proof_url && (
-              <div className="rounded-xl bg-yellow-50 p-4 text-sm text-yellow-900">
-                ⏳ Bukti transfer kamu sedang diverifikasi admin. Cek email berkala untuk update status.
-              </div>
+              <ProofInfoBox
+                tone="pending"
+                message="⏳ Bukti transfer kamu sedang diverifikasi admin. Cek email berkala untuk update status."
+                proofPath={order.payment_proof_url}
+                uploadedAt={order.payment_proof_uploaded_at}
+              />
+            )}
+            {order.payment_status === "paid" && order.payment_proof_url && (
+              <ProofInfoBox
+                tone="success"
+                message="✅ Bukti pembayaran sudah disetujui admin."
+                proofPath={order.payment_proof_url}
+                uploadedAt={order.payment_proof_uploaded_at}
+              />
             )}
             {order.payment_status === "pending" && !order.payment_proof_url && user && (
               <div className="space-y-3 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4 text-sm">
