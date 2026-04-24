@@ -139,7 +139,19 @@ export default function OrderDetail() {
         o.grade_id ? supabase.from("account_grades").select("grade").eq("id", o.grade_id).maybeSingle() : Promise.resolve({ data: null }),
         o.package_id ? supabase.from("packages").select("name, quantity").eq("id", o.package_id).maybeSingle() : Promise.resolve({ data: null }),
       ]);
-      return { ...o, products: prodRes.data, account_grades: gradeRes.data, packages: pkgRes.data };
+      // Ambil tanggal upload bukti (tidak di-return oleh RPC)
+      const { data: extra } = await supabase
+        .from("orders")
+        .select("payment_proof_uploaded_at")
+        .eq("id", o.id)
+        .maybeSingle();
+      return {
+        ...o,
+        products: prodRes.data,
+        account_grades: gradeRes.data,
+        packages: pkgRes.data,
+        payment_proof_uploaded_at: extra?.payment_proof_uploaded_at ?? null,
+      };
     },
     enabled: !!orderNumber,
   });
