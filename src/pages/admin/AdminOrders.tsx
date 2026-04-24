@@ -16,6 +16,7 @@ import { toast } from "sonner";
 export default function AdminOrders() {
   const queryClient = useQueryClient();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewIsPdf, setPreviewIsPdf] = useState(false);
   const [reviewing, setReviewing] = useState<any | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [tab, setTab] = useState<"pending" | "paid" | "rejected" | "all">("pending");
@@ -63,6 +64,7 @@ export default function AdminOrders() {
   const viewProof = async (path: string) => {
     const { data, error } = await supabase.storage.from("payment-proofs").createSignedUrl(path, 60 * 10);
     if (error) { toast.error("Gagal buka bukti: " + error.message); return; }
+    setPreviewIsPdf(path.toLowerCase().endsWith(".pdf"));
     setPreviewUrl(data.signedUrl);
   };
 
@@ -158,9 +160,20 @@ export default function AdminOrders() {
 
       {/* Preview bukti transfer */}
       <Dialog open={!!previewUrl} onOpenChange={(v) => !v && setPreviewUrl(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader><DialogTitle>Bukti Transfer</DialogTitle></DialogHeader>
-          {previewUrl && <img src={previewUrl} alt="Bukti transfer" className="w-full rounded-lg" />}
+          {previewUrl && (
+            <div className="space-y-3">
+              {previewIsPdf ? (
+                <iframe src={previewUrl} title="Bukti transfer PDF" className="h-[70vh] w-full rounded-lg border" />
+              ) : (
+                <img src={previewUrl} alt="Bukti transfer" className="max-h-[70vh] w-full rounded-lg object-contain" />
+              )}
+              <Button asChild variant="outline" size="sm" className="w-full">
+                <a href={previewUrl} target="_blank" rel="noopener noreferrer">Buka di tab baru</a>
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
