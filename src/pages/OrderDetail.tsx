@@ -260,9 +260,71 @@ export default function OrderDetail() {
               </div>
             </div>
 
-            {order.payment_status === "pending" && (
+            {order.payment_status === "pending" && order.payment_proof_url && (
               <div className="rounded-xl bg-yellow-50 p-4 text-sm text-yellow-900">
                 ⏳ Bukti transfer kamu sedang diverifikasi admin. Cek email berkala untuk update status.
+              </div>
+            )}
+            {order.payment_status === "pending" && !order.payment_proof_url && user && (
+              <div className="space-y-3 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4 text-sm">
+                <div>
+                  <p className="font-semibold text-foreground">📤 Upload Bukti Pembayaran</p>
+                  <p className="text-xs text-muted-foreground">Format: JPG, PNG, WEBP, PDF — maksimal 5 MB.</p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) setPreviewFile(f);
+                    e.target.value = "";
+                  }}
+                />
+                {previewFile ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 rounded-lg border bg-background p-2 text-xs">
+                      <FileImage className="h-4 w-4 text-primary" />
+                      <span className="flex-1 truncate">{previewFile.name}</span>
+                      <span className="text-muted-foreground">{(previewFile.size / 1024).toFixed(0)} KB</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        disabled={uploading}
+                        onClick={() => setPreviewFile(null)}
+                      >
+                        Batal
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 gap-2"
+                        disabled={uploading}
+                        onClick={() => uploadProof(previewFile)}
+                      >
+                        {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                        {uploading ? "Mengirim..." : "Kirim Bukti"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4" /> Pilih File Bukti
+                  </Button>
+                )}
+              </div>
+            )}
+            {order.payment_status === "failed" && order.payment_proof_url === null && (
+              <div className="rounded-xl bg-muted p-3 text-xs text-muted-foreground">
+                Upload ulang bukti tidak tersedia. Silakan buat order baru jika ingin coba lagi.
               </div>
             )}
             {order.payment_status === "failed" && (
