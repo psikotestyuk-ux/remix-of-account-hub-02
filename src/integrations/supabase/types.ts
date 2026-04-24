@@ -529,6 +529,32 @@ export type Database = {
         }
         Returns: boolean
       }
+      purchase_with_wallet: {
+        Args: {
+          _customer_name?: string
+          _customer_phone?: string
+          _grade_id?: string
+          _package_id?: string
+          _product_id: string
+          _quantity: number
+        }
+        Returns: {
+          message: string
+          new_balance: number
+          order_id: string
+          order_number: string
+          success: boolean
+        }[]
+      }
+      topup_wallet: {
+        Args: { _amount: number; _notes?: string; _payment_method?: string }
+        Returns: {
+          message: string
+          new_balance: number
+          success: boolean
+          transaction_id: string
+        }[]
+      }
       validate_promo_code: {
         Args: { _code: string; _purchase_amount: number }
         Returns: {
