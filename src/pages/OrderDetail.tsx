@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Copy, Check, Download, Lock, KeyRound } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef, useState } from "react";
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Copy, Check, Download, Lock, KeyRound, Upload, Loader2, FileImage } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatRupiah, CATEGORY_EMOJI } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 function FieldRow({ label, icon, value, keyId, copy, copiedIdx, mono }: {
   label: string; icon: string; value: string; keyId: string;
@@ -43,6 +44,56 @@ const ORDER_STATUS_MAP = {
 export default function OrderDetail() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
   const [copiedIdx, setCopiedIdx] = useState<string | null>(null);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+
+  const uploadProof = async (file: File) => {
+    if (!user || !order) return;
+    // Validasi sisi klien
+    const ALLOWED = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+    if (!ALLOWED.includes(file.type)) {
+      toast.error("Format harus JPG, PNG, WEBP, atau PDF");
+      return;
+    }
+    if (file.size > MAX_SIZE) {
+      toast.error("Ukuran maksimal 5 MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      // Path WAJIB diawali user_id agar RLS storage lulus
+      const ext = file.name.split(".").pop() || "bin";
+      const safeExt = ext.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const path = `${user.id}/${order.id}/${Date.now()}.${safeExt}`;
+      const { error: upErr } = await supabase.storage
+        .from("payment-proofs")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) throw upErr;
+
+      // Update order
+      const { error: updErr } = await supabase
+        .from("orders")
+        .update({ payment_proof_url: path, payment_proof_uploaded_at: new Date().toISOString() })
+        .eq("id", order.id);
+      if (updErr) {
+        // Rollback file kalau update gagal
+        await supabase.storage.from("payment-proofs").remove([path]);
+        throw updErr;
+      }
+
+      toast.success("Bukti terkirim! Menunggu verifikasi admin.");
+      setPreviewFile(null);
+      queryClient.invalidateQueries({ queryKey: ["order", orderNumber] });
+    } catch (err: any) {
+      toast.error("Gagal upload: " + (err.message || "unknown"));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderNumber],
@@ -209,9 +260,71 @@ export default function OrderDetail() {
               </div>
             </div>
 
-            {order.payment_status === "pending" && (
+            {order.payment_status === "pending" && order.payment_proof_url && (
               <div className="rounded-xl bg-yellow-50 p-4 text-sm text-yellow-900">
                 ⏳ Bukti transfer kamu sedang diverifikasi admin. Cek email berkala untuk update status.
+              </div>
+            )}
+            {order.payment_status === "pending" && !order.payment_proof_url && user && (
+              <div className="space-y-3 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4 text-sm">
+                <div>
+                  <p className="font-semibold text-foreground">📤 Upload Bukti Pembayaran</p>
+                  <p className="text-xs text-muted-foreground">Format: JPG, PNG, WEBP, PDF — maksimal 5 MB.</p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) setPreviewFile(f);
+                    e.target.value = "";
+                  }}
+                />
+                {previewFile ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 rounded-lg border bg-background p-2 text-xs">
+                      <FileImage className="h-4 w-4 text-primary" />
+                      <span className="flex-1 truncate">{previewFile.name}</span>
+                      <span className="text-muted-foreground">{(previewFile.size / 1024).toFixed(0)} KB</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        disabled={uploading}
+                        onClick={() => setPreviewFile(null)}
+                      >
+                        Batal
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 gap-2"
+                        disabled={uploading}
+                        onClick={() => uploadProof(previewFile)}
+                      >
+                        {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                        {uploading ? "Mengirim..." : "Kirim Bukti"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4" /> Pilih File Bukti
+                  </Button>
+                )}
+              </div>
+            )}
+            {order.payment_status === "failed" && order.payment_proof_url === null && (
+              <div className="rounded-xl bg-muted p-3 text-xs text-muted-foreground">
+                Upload ulang bukti tidak tersedia. Silakan buat order baru jika ingin coba lagi.
               </div>
             )}
             {order.payment_status === "failed" && (
