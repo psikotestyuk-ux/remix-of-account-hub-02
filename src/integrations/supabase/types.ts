@@ -502,12 +502,44 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_order_by_number: {
+        Args: { _order_number: string }
+        Returns: {
+          admin_notes: string
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          grade_id: string
+          id: string
+          order_number: string
+          order_status: Database["public"]["Enums"]["order_status"]
+          package_id: string
+          payment_proof_url: string
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          product_id: string
+          quantity: number
+          total_price: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      validate_promo_code: {
+        Args: { _code: string; _purchase_amount: number }
+        Returns: {
+          code: string
+          discount_type: Database["public"]["Enums"]["discount_type"]
+          discount_value: number
+          message: string
+          min_purchase: number
+          title: string
+          valid: boolean
+        }[]
       }
     }
     Enums: {
