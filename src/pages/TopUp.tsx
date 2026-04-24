@@ -27,31 +27,15 @@ export default function TopUp() {
     if (amount > 50_000_000) { toast.error("Maksimal topup Rp 50.000.000"); return; }
     setLoading(true);
     try {
-      // Read current balance fresh from DB (avoid stale state)
-      const { data: wRow } = await supabase
-        .from("wallets")
-        .select("balance")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const currentBalance = wRow?.balance ?? 0;
-      const newBalance = currentBalance + amount;
-
-      // Upsert ensures wallet row exists even for legacy users
-      const { error: wErr } = await supabase
-        .from("wallets")
-        .upsert({ user_id: user.id, balance: newBalance }, { onConflict: "user_id" });
-      if (wErr) throw wErr;
-
-      const { error: txErr } = await supabase.from("wallet_transactions").insert({
-        user_id: user.id,
-        type: "topup",
-        status: "completed",
-        amount: amount,
-        balance_after: newBalance,
-        payment_method: "xendit_mock",
-        notes: "Top up via Xendit (mock - menunggu integrasi production)",
+      // Server-side topup (RLS-safe via SECURITY DEFINER function)
+      const { data, error } = await supabase.rpc("topup_wallet", {
+        _amount: amount,
+        _payment_method: "xendit_mock",
+        _notes: "Top up via Xendit (mock - menunggu integrasi production)",
       });
-      if (txErr) throw txErr;
+      if (error) throw error;
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result?.success) throw new Error(result?.message || "Topup gagal");
 
       await refreshBalance();
       toast.success(`Saldo +${formatRupiah(amount)} berhasil ditambahkan`);

@@ -77,38 +77,23 @@ export default function Checkout() {
 
     setLoading(true);
     try {
-      const { data: profile } = await supabase.from("profiles").select("full_name, phone").eq("user_id", user.id).maybeSingle();
-
-      const { data: order, error: oErr } = await supabase.from("orders").insert({
-        customer_name: profile?.full_name || user.email!.split("@")[0],
-        customer_email: user.email!,
-        customer_phone: profile?.phone || "-",
-        product_id: item.id,
-        quantity: finalQty,
-        total_price: totalPrice,
-        order_number: "placeholder",
-        package_id: selectedPkg || null,
-        grade_id: selectedGrade || null,
-        user_id: user.id,
-        payment_method: "wallet",
-        payment_status: "paid",
-      }).select("order_number, id").single();
-      if (oErr) throw oErr;
-
-      const newBalance = balance - totalPrice;
-      const { error: wErr } = await supabase.from("wallets").update({ balance: newBalance }).eq("user_id", user.id);
-      if (wErr) throw wErr;
-
-      await supabase.from("wallet_transactions").insert({
-        user_id: user.id, type: "purchase", status: "completed",
-        amount: totalPrice, balance_after: newBalance,
-        order_id: order.id, notes: `Pembelian order ${order.order_number}`,
+      // Server-side purchase (server hitung harga & kurangi saldo dengan locking)
+      const { data, error } = await supabase.rpc("purchase_with_wallet", {
+        _product_id: item.id,
+        _quantity: item.quantity,
+        _grade_id: selectedGrade || null,
+        _package_id: selectedPkg || null,
+        _customer_name: null,
+        _customer_phone: null,
       });
+      if (error) throw error;
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result?.success) throw new Error(result?.message || "Gagal memproses pembelian");
 
       await refreshBalance();
       clearCart();
       toast.success("Pembelian berhasil!");
-      navigate(`/order-success?orders=${order.order_number}`);
+      navigate(`/order-success?orders=${result.order_number}`);
     } catch (err: any) {
       toast.error("Gagal: " + err.message);
     } finally { setLoading(false); }

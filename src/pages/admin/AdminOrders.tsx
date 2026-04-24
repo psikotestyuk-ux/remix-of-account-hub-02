@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Eye, Check, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,6 +18,7 @@ export default function AdminOrders() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [reviewing, setReviewing] = useState<any | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
+  const [tab, setTab] = useState<"pending" | "paid" | "rejected" | "all">("pending");
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders-list"],
@@ -71,16 +73,39 @@ export default function AdminOrders() {
     expired: "bg-muted text-muted-foreground",
   };
 
+  const filtered = (orders || []).filter((o: any) => {
+    if (tab === "all") return true;
+    if (tab === "pending") return o.payment_status === "pending";
+    if (tab === "paid") return o.payment_status === "paid";
+    if (tab === "rejected") return o.payment_status === "failed" || o.payment_status === "expired";
+    return true;
+  });
+
+  const counts = {
+    pending: (orders || []).filter((o: any) => o.payment_status === "pending").length,
+    paid: (orders || []).filter((o: any) => o.payment_status === "paid").length,
+    rejected: (orders || []).filter((o: any) => o.payment_status === "failed" || o.payment_status === "expired").length,
+    all: (orders || []).length,
+  };
+
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold">Orders</h1>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="mb-4">
+        <TabsList>
+          <TabsTrigger value="pending">Menunggu Verifikasi ({counts.pending})</TabsTrigger>
+          <TabsTrigger value="paid">Sudah Lunas ({counts.paid})</TabsTrigger>
+          <TabsTrigger value="rejected">Ditolak/Expired ({counts.rejected})</TabsTrigger>
+          <TabsTrigger value="all">Semua ({counts.all})</TabsTrigger>
+        </TabsList>
+      </Tabs>
       {isLoading ? (
         <p className="text-muted-foreground">Memuat...</p>
-      ) : orders?.length === 0 ? (
-        <p className="text-muted-foreground">Belum ada order</p>
+      ) : filtered.length === 0 ? (
+        <p className="text-muted-foreground">Tidak ada order di kategori ini.</p>
       ) : (
         <div className="space-y-3">
-          {orders?.map((order: any) => (
+          {filtered.map((order: any) => (
             <Card key={order.id} className="border-0 shadow-sm">
               <CardContent className="p-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">

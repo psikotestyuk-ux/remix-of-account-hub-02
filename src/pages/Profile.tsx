@@ -10,6 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Wallet, LogOut, Plus, Receipt, ShoppingBag, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const profileSchema = z.object({
+  full_name: z.string().trim().max(100, "Nama maksimal 100 karakter").optional().nullable(),
+  phone: z.string().trim().max(20, "Telepon maksimal 20 karakter").regex(/^[0-9+\-\s()]*$/, "Telepon hanya boleh angka & simbol +-()").optional().nullable(),
+  country: z.string().trim().length(2, "Kode negara 2 huruf").optional().nullable(),
+});
 
 type Profile = { full_name: string | null; phone: string | null; country: string | null };
 type Tx = { id: string; type: string; status: string; amount: number; notes: string | null; created_at: string };
@@ -47,12 +54,14 @@ export default function Profile() {
   const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    setSaving(true);
-    const { error } = await supabase.from("profiles").update({
+    const parsed = profileSchema.safeParse({
       full_name: profile.full_name?.trim() || null,
       phone: profile.phone?.trim() || null,
       country: profile.country || "ID",
-    }).eq("user_id", user.id);
+    });
+    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
+    setSaving(true);
+    const { error } = await supabase.from("profiles").update(parsed.data).eq("user_id", user.id);
     setSaving(false);
     if (error) toast.error(error.message); else toast.success("Profil tersimpan");
   };
