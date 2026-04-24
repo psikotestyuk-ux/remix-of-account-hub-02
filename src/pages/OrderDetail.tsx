@@ -44,6 +44,56 @@ const ORDER_STATUS_MAP = {
 export default function OrderDetail() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
   const [copiedIdx, setCopiedIdx] = useState<string | null>(null);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+
+  const uploadProof = async (file: File) => {
+    if (!user || !order) return;
+    // Validasi sisi klien
+    const ALLOWED = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+    if (!ALLOWED.includes(file.type)) {
+      toast.error("Format harus JPG, PNG, WEBP, atau PDF");
+      return;
+    }
+    if (file.size > MAX_SIZE) {
+      toast.error("Ukuran maksimal 5 MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      // Path WAJIB diawali user_id agar RLS storage lulus
+      const ext = file.name.split(".").pop() || "bin";
+      const safeExt = ext.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const path = `${user.id}/${order.id}/${Date.now()}.${safeExt}`;
+      const { error: upErr } = await supabase.storage
+        .from("payment-proofs")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) throw upErr;
+
+      // Update order
+      const { error: updErr } = await supabase
+        .from("orders")
+        .update({ payment_proof_url: path, payment_proof_uploaded_at: new Date().toISOString() })
+        .eq("id", order.id);
+      if (updErr) {
+        // Rollback file kalau update gagal
+        await supabase.storage.from("payment-proofs").remove([path]);
+        throw updErr;
+      }
+
+      toast.success("Bukti terkirim! Menunggu verifikasi admin.");
+      setPreviewFile(null);
+      queryClient.invalidateQueries({ queryKey: ["order", orderNumber] });
+    } catch (err: any) {
+      toast.error("Gagal upload: " + (err.message || "unknown"));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderNumber],
