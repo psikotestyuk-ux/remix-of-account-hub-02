@@ -29,6 +29,31 @@ function FieldRow({ label, icon, value, keyId, copy, copiedIdx, mono }: {
   );
 }
 
+function ProofInfoBox({ tone, message, proofPath, uploadedAt }: {
+  tone: "pending" | "success";
+  message: string;
+  proofPath: string;
+  uploadedAt: string | null;
+}) {
+  const fileName = proofPath.split("/").pop() || proofPath;
+  const dateText = uploadedAt
+    ? new Date(uploadedAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })
+    : "-";
+  const toneClass = tone === "pending"
+    ? "bg-yellow-50 text-yellow-900 border-yellow-200"
+    : "bg-green-50 text-green-900 border-green-200";
+  return (
+    <div className={`space-y-2 rounded-xl border p-4 text-sm ${toneClass}`}>
+      <p>{message}</p>
+      <div className="flex items-center gap-2 rounded-lg bg-background/70 p-2 text-xs">
+        <FileImage className="h-4 w-4 shrink-0" />
+        <code className="flex-1 truncate font-mono">{fileName}</code>
+      </div>
+      <p className="text-xs opacity-80">📅 Diunggah: {dateText}</p>
+    </div>
+  );
+}
+
 const STATUS_MAP = {
   pending: { label: "Menunggu Verifikasi", icon: Clock, color: "bg-yellow-100 text-yellow-800" },
   paid: { label: "Pembayaran Disetujui", icon: CheckCircle, color: "bg-green-100 text-green-800" },
