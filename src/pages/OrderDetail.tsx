@@ -47,13 +47,18 @@ export default function OrderDetail() {
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderNumber],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*, products(*), account_grades(grade), packages(name, quantity)")
-        .eq("order_number", orderNumber!)
-        .maybeSingle();
+      // Pakai SECURITY DEFINER function: PII di-mask kalau bukan owner/admin
+      const { data: rows, error } = await supabase.rpc("get_order_by_number", { _order_number: orderNumber! });
       if (error) throw error;
-      return data;
+      const o = Array.isArray(rows) ? rows[0] : rows;
+      if (!o) return null;
+      // Ambil produk + grade + paket secara terpisah (semua sudah punya RLS public-read)
+      const [prodRes, gradeRes, pkgRes] = await Promise.all([
+        o.product_id ? supabase.from("products").select("*").eq("id", o.product_id).maybeSingle() : Promise.resolve({ data: null }),
+        o.grade_id ? supabase.from("account_grades").select("grade").eq("id", o.grade_id).maybeSingle() : Promise.resolve({ data: null }),
+        o.package_id ? supabase.from("packages").select("name, quantity").eq("id", o.package_id).maybeSingle() : Promise.resolve({ data: null }),
+      ]);
+      return { ...o, products: prodRes.data, account_grades: gradeRes.data, packages: pkgRes.data };
     },
     enabled: !!orderNumber,
   });
