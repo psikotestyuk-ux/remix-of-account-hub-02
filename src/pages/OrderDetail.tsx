@@ -291,9 +291,20 @@ export default function OrderDetail() {
             </div>
 
             {order.payment_status === "pending" && order.payment_proof_url && (
-              <div className="rounded-xl bg-yellow-50 p-4 text-sm text-yellow-900">
-                ⏳ Bukti transfer kamu sedang diverifikasi admin. Cek email berkala untuk update status.
-              </div>
+              <ProofInfoBox
+                tone="pending"
+                message="⏳ Bukti transfer kamu sedang diverifikasi admin. Cek email berkala untuk update status."
+                proofPath={order.payment_proof_url}
+                uploadedAt={order.payment_proof_uploaded_at}
+              />
+            )}
+            {order.payment_status === "paid" && order.payment_proof_url && (
+              <ProofInfoBox
+                tone="success"
+                message="✅ Bukti pembayaran sudah disetujui admin."
+                proofPath={order.payment_proof_url}
+                uploadedAt={order.payment_proof_uploaded_at}
+              />
             )}
             {order.payment_status === "pending" && !order.payment_proof_url && user && (
               <div className="space-y-3 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4 text-sm">
