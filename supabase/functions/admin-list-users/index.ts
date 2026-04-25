@@ -58,7 +58,16 @@ Deno.serve(async (req) => {
       if (page > 10) break;
     }
 
-    const result = allUsers.map((u) => ({
+    // Exclude admin accounts from the regular Users list
+    const { data: adminRows } = await admin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin");
+    const adminIds = new Set((adminRows ?? []).map((r: any) => r.user_id));
+
+    const result = allUsers
+      .filter((u) => !adminIds.has(u.id))
+      .map((u) => ({
       id: u.id,
       email: u.email,
       created_at: u.created_at,
