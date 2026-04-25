@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -31,6 +31,9 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     try {
+      // Map username "admin" ke email internal; izinkan juga input email langsung
+      const input = username.trim().toLowerCase();
+      const email = input.includes("@") ? input : `${input}@buyingaccount.local`;
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: data.user.id, _role: "admin" });
@@ -61,8 +64,8 @@ export default function AdminLogin() {
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@example.com" required />
+              <Label htmlFor="username">Username</Label>
+              <Input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin" autoComplete="username" required />
             </div>
             <div>
               <Label htmlFor="password">Password</Label>
