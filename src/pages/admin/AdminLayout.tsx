@@ -103,9 +103,14 @@ export default function AdminLayout() {
           </SidebarFooter>
         </Sidebar>
         <div className="flex flex-1 flex-col">
-          <header className="sticky top-0 z-10 flex h-12 items-center gap-2 border-b bg-card px-3 md:px-4">
-            <SidebarTrigger />
-            <span className="text-sm font-semibold">Admin Panel</span>
+          <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-card/95 px-3 backdrop-blur md:px-4">
+            <SidebarTrigger className="h-9 w-9" />
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-primary to-accent text-xs font-bold text-primary-foreground md:hidden">
+                B
+              </div>
+              <span className="text-sm font-semibold">Admin Panel</span>
+            </div>
           </header>
           <main className="flex-1 overflow-y-auto p-4 md:p-6">
             <Outlet />
