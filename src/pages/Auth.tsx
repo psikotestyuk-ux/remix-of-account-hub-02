@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2, Mail, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 const loginSchema = z.object({
@@ -34,6 +34,8 @@ export default function Auth() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", full_name: "" });
+  const [showLoginPass, setShowLoginPass] = useState(false);
+  const [showSignupPass, setShowSignupPass] = useState(false);
 
   useEffect(() => {
     if (!authLoading && session) navigate(redirect, { replace: true });
@@ -163,7 +165,24 @@ export default function Auth() {
                 </div>
                 <div>
                   <Label htmlFor="lpass">Password</Label>
-                  <Input id="lpass" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+                  <div className="relative">
+                    <Input
+                      id="lpass"
+                      type={showLoginPass ? "text" : "password"}
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      required
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPass((v) => !v)}
+                      aria-label={showLoginPass ? "Sembunyikan password" : "Tampilkan password"}
+                      className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                    >
+                      {showLoginPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="flex justify-end">
                   <button type="button" onClick={() => { setForgotEmail(form.email); setForgotOpen(true); }} className="text-xs font-medium text-primary hover:underline">
@@ -188,7 +207,25 @@ export default function Auth() {
                 </div>
                 <div>
                   <Label htmlFor="spass">Password (min 6)</Label>
-                  <Input id="spass" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />
+                  <div className="relative">
+                    <Input
+                      id="spass"
+                      type={showSignupPass ? "text" : "password"}
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      required
+                      minLength={6}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignupPass((v) => !v)}
+                      aria-label={showSignupPass ? "Sembunyikan password" : "Tampilkan password"}
+                      className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                    >
+                      {showSignupPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button type="submit" disabled={loading} className="w-full gap-2 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90">
                   {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Mendaftar...</> : "Buat Akun"}
