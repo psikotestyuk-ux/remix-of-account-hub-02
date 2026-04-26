@@ -1,0 +1,1 @@
+{\n  "build": {\n    "env": {\n      "DATABASE_URL": "${{DATABASE_URL}}",\n      "API_KEY": "${{API_KEY}}"\n    }\n  }\n}
