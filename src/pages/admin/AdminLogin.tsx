@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,13 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Eye, EyeOff, ShieldCheck, AlertCircle } from "lucide-react";
+import { Loader2, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-
-const LOCKOUT_KEY = "admin_login_attempts";
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 const schema = z.object({
   username: z
@@ -23,26 +18,6 @@ const schema = z.object({
     .max(120, "Terlalu panjang"),
   password: z.string().min(6, "Password minimal 6 karakter").max(200),
 });
-
-type Attempts = { count: number; lockedUntil: number | null };
-
-function readAttempts(): Attempts {
-  try {
-    const raw = localStorage.getItem(LOCKOUT_KEY);
-    if (!raw) return { count: 0, lockedUntil: null };
-    return JSON.parse(raw);
-  } catch {
-    return { count: 0, lockedUntil: null };
-  }
-}
-
-function writeAttempts(a: Attempts) {
-  localStorage.setItem(LOCKOUT_KEY, JSON.stringify(a));
-}
-
-function clearAttempts() {
-  localStorage.removeItem(LOCKOUT_KEY);
-}
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -54,35 +29,8 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ username?: string; password?: string }>({});
-  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
-  const [now, setNow] = useState(Date.now());
 
   const from = (location.state as any)?.from || "/admin";
-
-  // Hydrate lockout state on mount
-  useEffect(() => {
-    const a = readAttempts();
-    if (a.lockedUntil && a.lockedUntil > Date.now()) {
-      setLockedUntil(a.lockedUntil);
-    } else if (a.lockedUntil) {
-      clearAttempts();
-    }
-  }, []);
-
-  // Countdown tick while locked
-  useEffect(() => {
-    if (!lockedUntil) return;
-    const id = setInterval(() => {
-      const t = Date.now();
-      setNow(t);
-      if (t >= lockedUntil) {
-        setLockedUntil(null);
-        clearAttempts();
-        clearInterval(id);
-      }
-    }, 1000);
-    return () => clearInterval(id);
-  }, [lockedUntil]);
 
   // Already authenticated as admin → bounce to dashboard
   if (!authLoading && session && isAdmin) {
@@ -92,8 +40,6 @@ export default function AdminLogin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setFieldErrors({});
-
-    if (lockedUntil && lockedUntil > Date.now()) return;
 
     const parsed = schema.safeParse({ username, password });
     if (!parsed.success) {
@@ -127,30 +73,14 @@ export default function AdminLogin() {
         throw new Error("Akun ini bukan admin.");
       }
 
-      clearAttempts();
       toast.success("Login berhasil — selamat datang, Admin!");
       navigate(from, { replace: true });
     } catch (err: any) {
-      const a = readAttempts();
-      const next = a.count + 1;
-      const locked = next >= MAX_ATTEMPTS;
-      const lockTs = locked ? Date.now() + LOCKOUT_MS : null;
-      writeAttempts({ count: next, lockedUntil: lockTs });
-      if (locked) {
-        setLockedUntil(lockTs);
-        toast.error("Terlalu banyak percobaan. Coba lagi dalam 5 menit.");
-      } else {
-        const remaining = MAX_ATTEMPTS - next;
-        toast.error(`${err.message || "Login gagal"} (${remaining} percobaan tersisa)`);
-      }
+      toast.error(err.message || "Login gagal. Periksa koneksi atau coba dari versi publish.");
     } finally {
       setSubmitting(false);
     }
   };
-
-  const lockedSecondsLeft = lockedUntil ? Math.max(0, Math.ceil((lockedUntil - now) / 1000)) : 0;
-  const lockedMin = Math.floor(lockedSecondsLeft / 60);
-  const lockedSec = lockedSecondsLeft % 60;
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4">
@@ -164,18 +94,6 @@ export default function AdminLogin() {
             <p className="text-sm text-muted-foreground">Akses panel admin BuyingAccount</p>
           </div>
 
-          {lockedUntil && lockedSecondsLeft > 0 && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Login dikunci. Coba lagi dalam{" "}
-                <span className="font-mono font-semibold">
-                  {lockedMin.toString().padStart(2, "0")}:{lockedSec.toString().padStart(2, "0")}
-                </span>
-              </AlertDescription>
-            </Alert>
-          )}
-
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <Label htmlFor="username">Username</Label>
@@ -186,7 +104,7 @@ export default function AdminLogin() {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="admin"
                 autoComplete="username"
-                disabled={submitting || !!lockedUntil}
+                disabled={submitting}
                 aria-invalid={!!fieldErrors.username}
                 required
               />
@@ -205,7 +123,7 @@ export default function AdminLogin() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  disabled={submitting || !!lockedUntil}
+                  disabled={submitting}
                   aria-invalid={!!fieldErrors.password}
                   className="pr-10"
                   required
@@ -227,7 +145,7 @@ export default function AdminLogin() {
 
             <Button
               type="submit"
-              disabled={submitting || !!lockedUntil}
+              disabled={submitting}
               className="w-full gap-2 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90"
             >
               {submitting ? (
