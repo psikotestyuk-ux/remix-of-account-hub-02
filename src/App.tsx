@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { AdminAuthProvider } from "@/hooks/use-admin-auth";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -67,18 +68,27 @@ const App = () => (
           <Route path="/profile" element={<PublicLayout><Profile /></PublicLayout>} />
           <Route path="/topup" element={<PublicLayout><TopUp /></PublicLayout>} />
           <Route path="/wallet" element={<PublicLayout><Wallet /></PublicLayout>} />
-          <Route path="/admin/login" element={<PublicLayout><AdminLogin /></PublicLayout>} />
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="products" element={<AdminProducts />} />
-            <Route path="grades" element={<AdminGrades />} />
-            <Route path="promos" element={<AdminPromos />} />
-            <Route path="orders" element={<AdminOrders />} />
-            <Route path="credentials" element={<AdminCredentials />} />
-            <Route path="import" element={<AdminImportCredentials />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="users/:id" element={<AdminUserDetail />} />
-          </Route>
+          <Route
+            path="/admin/*"
+            element={
+              <AdminAuthProvider>
+                <Routes>
+                  <Route path="login" element={<AdminLogin />} />
+                  <Route path="" element={<AdminLayout />}>
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="products" element={<AdminProducts />} />
+                    <Route path="grades" element={<AdminGrades />} />
+                    <Route path="promos" element={<AdminPromos />} />
+                    <Route path="orders" element={<AdminOrders />} />
+                    <Route path="credentials" element={<AdminCredentials />} />
+                    <Route path="import" element={<AdminImportCredentials />} />
+                    <Route path="users" element={<AdminUsers />} />
+                    <Route path="users/:id" element={<AdminUserDetail />} />
+                  </Route>
+                </Routes>
+              </AdminAuthProvider>
+            }
+          />
           <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
         </Routes>
       </BrowserRouter>
