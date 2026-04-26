@@ -1,9 +1,18 @@
-import { useEffect, useState } from "react";
-import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, Package, ShoppingCart, Key, LogOut, Layers, Tag, Upload, Users } from "lucide-react";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Key,
+  LogOut,
+  Layers,
+  Tag,
+  Upload,
+  Users,
+  ShieldCheck,
+  ChevronDown,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sidebar,
   SidebarContent,
@@ -17,6 +26,19 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
+import { AdminProtected } from "@/components/admin/AdminProtected";
+import { toast } from "sonner";
 
 const NAV_ITEMS = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -29,34 +51,20 @@ const NAV_ITEMS = [
   { to: "/admin/users", icon: Users, label: "Users" },
 ];
 
-export default function AdminLayout() {
+function AdminShell() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [loading, setLoading] = useState(true);
+  const { user, signOut } = useAdminAuth();
 
-  useEffect(() => {
-    const check = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/admin/login"); return; }
-      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" });
-      if (!isAdmin) { navigate("/admin/login"); return; }
-      setLoading(false);
-    };
-    check();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") navigate("/admin/login");
-    });
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+  const email = user?.email ?? "";
+  const displayName = email.split("@")[0] || "admin";
+  const initial = displayName.charAt(0).toUpperCase();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/admin/login");
+    await signOut();
+    toast.success("Anda telah keluar");
+    navigate("/admin/login", { replace: true });
   };
-
-  if (loading) {
-    return <div className="flex min-h-screen items-center justify-center"><Skeleton className="h-12 w-48" /></div>;
-  }
 
   return (
     <SidebarProvider>
@@ -111,6 +119,54 @@ export default function AdminLayout() {
               </div>
               <span className="text-sm font-semibold">Admin Panel</span>
             </div>
+
+            <div className="ml-auto flex items-center gap-2">
+              <Badge variant="secondary" className="hidden gap-1.5 sm:inline-flex">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                </span>
+                Aktif
+              </Badge>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 gap-2 rounded-full px-2 hover:bg-muted"
+                  >
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xs font-semibold text-primary-foreground">
+                        {initial}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden text-sm font-medium md:inline">{displayName}</span>
+                    <ChevronDown className="hidden h-3.5 w-3.5 text-muted-foreground md:inline" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60">
+                  <DropdownMenuLabel className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+                      <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                      Sesi Admin Aktif
+                    </div>
+                    <div className="truncate text-sm font-medium normal-case">{email}</div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/")}>
+                    Buka situs publik
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" /> Keluar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </header>
           <main className="flex-1 overflow-y-auto p-4 md:p-6">
             <Outlet />
@@ -118,5 +174,13 @@ export default function AdminLayout() {
         </div>
       </div>
     </SidebarProvider>
+  );
+}
+
+export default function AdminLayout() {
+  return (
+    <AdminProtected>
+      <AdminShell />
+    </AdminProtected>
   );
 }
