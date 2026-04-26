@@ -121,13 +121,10 @@ function AdminShell() {
             </div>
 
             <div className="ml-auto flex items-center gap-2">
-              <Badge
-                variant="secondary"
-                className="hidden gap-1 border-emerald-200 bg-emerald-50 text-emerald-700 sm:inline-flex dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-400"
-              >
+              <Badge variant="secondary" className="hidden gap-1.5 sm:inline-flex">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
                 </span>
                 Aktif
               </Badge>
@@ -151,7 +148,7 @@ function AdminShell() {
                 <DropdownMenuContent align="end" className="w-60">
                   <DropdownMenuLabel className="space-y-1">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                      <ShieldCheck className="h-3.5 w-3.5 text-primary" />
                       Sesi Admin Aktif
                     </div>
                     <div className="truncate text-sm font-medium normal-case">{email}</div>
