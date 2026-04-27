@@ -502,6 +502,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_short_order_code: { Args: never; Returns: string }
       get_order_by_number: {
         Args: { _order_number: string }
         Returns: {
