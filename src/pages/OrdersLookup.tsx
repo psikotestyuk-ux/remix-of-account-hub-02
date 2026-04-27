@@ -38,7 +38,7 @@ export default function OrdersLookup() {
       <Card className="mb-8 border-0 shadow-lg">
         <CardContent className="p-6">
           <form onSubmit={handleCheck} className="flex gap-2">
-            <Input value={orderNum} onChange={(e) => setOrderNum(e.target.value)} placeholder="BA-20260417-xxxxxxxx" className="rounded-xl" />
+            <Input value={orderNum} onChange={(e) => setOrderNum(e.target.value)} placeholder="BA-XXXXXX" className="rounded-xl" />
             <Button type="submit" className="gap-2 rounded-xl"><Search className="h-4 w-4" /> Cek</Button>
           </form>
         </CardContent>

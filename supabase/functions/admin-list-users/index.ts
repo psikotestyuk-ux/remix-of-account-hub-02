@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
       recovery_sent_at: u.recovery_sent_at ?? null,
       confirmation_sent_at: u.confirmation_sent_at ?? null,
       email_change_sent_at: u.email_change_sent_at ?? null,
+      banned_until: u.banned_until ?? null,
     }));
 
     return new Response(JSON.stringify({ users: result }), {

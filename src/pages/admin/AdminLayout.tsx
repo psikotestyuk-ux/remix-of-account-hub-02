@@ -46,7 +46,7 @@ const NAV_ITEMS = [
   { to: "/admin/grades", icon: Layers, label: "Grade & Paket" },
   { to: "/admin/promos", icon: Tag, label: "Promo" },
   { to: "/admin/orders", icon: ShoppingCart, label: "Orders" },
-  { to: "/admin/credentials", icon: Key, label: "Credentials" },
+  { to: "/admin/credentials", icon: Key, label: "Sales History" },
   { to: "/admin/import", icon: Upload, label: "Import TXT" },
   { to: "/admin/users", icon: Users, label: "Users" },
 ];
