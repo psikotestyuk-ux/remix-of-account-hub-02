@@ -29,9 +29,6 @@ type FormState = {
 
 const EMPTY_FORM: FormState = { slug: "", label: "", logo_url: "", display_order: 0, is_active: true };
 
-async function ensureBucket(name: string) {
-  await supabase.storage.createBucket(name, { public: true }).catch(() => {});
-}
 
 export default function AdminCategories() {
   const queryClient = useQueryClient();
@@ -119,7 +116,6 @@ export default function AdminCategories() {
 
     setUploading(true);
     try {
-      await ensureBucket("category-logos");
       const { error: uploadErr } = await supabase.storage
         .from("category-logos")
         .upload(path, file, { upsert: true });
