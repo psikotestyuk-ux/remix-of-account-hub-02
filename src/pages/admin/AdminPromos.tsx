@@ -40,6 +40,8 @@ export default function AdminPromos() {
     const path = `banners/${Date.now()}.${ext}`;
     setUploading(true);
     try {
+      // Buat bucket otomatis jika belum ada
+      await supabase.storage.createBucket("promo-banners", { public: true }).catch(() => {});
       const { error } = await supabase.storage.from("promo-banners").upload(path, file, { upsert: true });
       if (error) throw error;
       const { data } = supabase.storage.from("promo-banners").getPublicUrl(path);
