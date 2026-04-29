@@ -65,12 +65,10 @@ export default function Checkout() {
     : item.price * item.quantity;
   const finalQty = pkg ? pkg.quantity : item.quantity;
   const insufficient = totalPrice > balance;
-  const hasGradesButNoPkg = grades.length > 0 && packages.length > 0 && !selectedPkg;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (grades.length > 0 && packages.length > 0 && !selectedPkg) { toast.error("Pilih paket dulu"); return; }
     if (grades.length > 0 && !selectedGrade) { toast.error("Pilih grade dulu"); return; }
     if (totalPrice <= 0) { toast.error("Total tidak valid"); return; }
     if (insufficient) { toast.error("Saldo tidak cukup. Top up dulu."); return; }
@@ -161,7 +159,7 @@ export default function Checkout() {
             </Card>
           )}
 
-          <Button type="submit" disabled={loading || insufficient || totalPrice <= 0 || hasGradesButNoPkg}
+          <Button type="submit" disabled={loading || insufficient || totalPrice <= 0}
             className="w-full gap-2 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90" size="lg">
             {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Memproses...</> : <><ShoppingBag className="h-4 w-4" /> Bayar dengan Saldo</>}
           </Button>

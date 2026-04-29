@@ -37,6 +37,12 @@ export default function AdminLogin() {
     return <Navigate to={from} replace />;
   }
 
+  // Regular user (not admin) accidentally landed here → redirect home
+  if (!authLoading && session && !isAdmin) {
+    toast.error("Halaman ini hanya untuk admin.");
+    return <Navigate to="/" replace />;
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setFieldErrors({});

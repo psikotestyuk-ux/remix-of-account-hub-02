@@ -11,6 +11,7 @@ import {
   Users,
   ShieldCheck,
   ChevronDown,
+  Grid2x2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,8 +43,8 @@ import { toast } from "sonner";
 
 const NAV_ITEMS = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/admin/categories", icon: Grid2x2, label: "Kategori" },
   { to: "/admin/products", icon: Package, label: "Produk" },
-  { to: "/admin/grades", icon: Layers, label: "Grade & Paket" },
   { to: "/admin/promos", icon: Tag, label: "Promo" },
   { to: "/admin/orders", icon: ShoppingCart, label: "Orders" },
   { to: "/admin/credentials", icon: Key, label: "Sales History" },
