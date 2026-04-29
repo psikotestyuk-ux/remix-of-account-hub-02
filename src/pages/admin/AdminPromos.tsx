@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, Tag } from "lucide-react";
+import { Plus, Pencil, Trash2, Tag, Upload, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatRupiah } from "@/lib/constants";
 
@@ -26,6 +26,32 @@ export default function AdminPromos() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<Promo>>(empty);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      toast.error("Format tidak didukung. Gunakan JPG, PNG, WEBP, atau GIF."); return;
+    }
+    if (file.size > 3 * 1024 * 1024) { toast.error("Maksimal 3 MB."); return; }
+    const ext = file.name.split(".").pop();
+    const path = `banners/${Date.now()}.${ext}`;
+    setUploading(true);
+    try {
+      const { error } = await supabase.storage.from("promo-banners").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("promo-banners").getPublicUrl(path);
+      setEditing((prev) => ({ ...prev, banner_url: data.publicUrl }));
+      toast.success("Banner diupload!");
+    } catch (err: any) {
+      toast.error("Upload gagal: " + err.message);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -80,7 +106,23 @@ export default function AdminPromos() {
               <div><Label>Kode promo</Label><Input value={editing.code || ""} onChange={(e) => setEditing({ ...editing, code: e.target.value })} placeholder="DISKON10" /></div>
               <div><Label>Judul</Label><Input value={editing.title || ""} onChange={(e) => setEditing({ ...editing, title: e.target.value })} placeholder="Diskon Lebaran" /></div>
               <div><Label>Deskripsi</Label><Textarea value={editing.description || ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></div>
-              <div><Label>URL Banner (opsional)</Label><Input value={editing.banner_url || ""} onChange={(e) => setEditing({ ...editing, banner_url: e.target.value })} placeholder="https://..." /></div>
+              <div>
+                <Label>Banner (opsional)</Label>
+                <div className="mt-1 space-y-2">
+                  {editing.banner_url && (
+                    <div className="relative">
+                      <img src={editing.banner_url} alt="Banner preview" className="h-28 w-full rounded-lg object-cover border" />
+                      <Button type="button" size="icon" variant="destructive" className="absolute right-1 top-1 h-6 w-6"
+                        onClick={() => setEditing({ ...editing, banner_url: "" })}><X className="h-3 w-3" /></Button>
+                    </div>
+                  )}
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
+                  <Button type="button" variant="outline" size="sm" className="gap-2 w-full" onClick={() => fileRef.current?.click()} disabled={uploading}>
+                    {uploading ? <><Loader2 className="h-3 w-3 animate-spin" /> Mengupload...</> : <><Upload className="h-3 w-3" /> Upload Gambar Banner</>}
+                  </Button>
+                  <Input value={editing.banner_url || ""} onChange={(e) => setEditing({ ...editing, banner_url: e.target.value })} placeholder="atau paste URL gambar..." />
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Tipe diskon</Label>
