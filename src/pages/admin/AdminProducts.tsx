@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatRupiah, CATEGORIES } from "@/lib/constants";
+import { formatRupiah } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -294,6 +294,15 @@ export default function AdminProducts() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  const { data: categorySettings } = useQuery({
+    queryKey: ["category-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("category_settings").select("slug, label, emoji, logo_url").eq("is_active", true).order("display_order");
+      if (error) throw error;
+      return data as { slug: string; label: string; emoji: string; logo_url: string | null }[];
+    },
+  });
+
   const { data: products, isLoading } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
@@ -374,8 +383,10 @@ export default function AdminProducts() {
                 <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as any })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.filter((c) => c.value !== "all").map((c) => (
-                      <SelectItem key={c.value} value={c.value}>{c.emoji} {c.label}</SelectItem>
+                    {(categorySettings || []).map((c) => (
+                      <SelectItem key={c.slug} value={c.slug}>
+                        {c.logo_url ? <img src={c.logo_url} alt={c.label} className="inline h-4 w-4 object-contain mr-1" /> : c.emoji} {c.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

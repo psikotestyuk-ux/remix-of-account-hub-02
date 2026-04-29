@@ -6,14 +6,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CATEGORIES } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PromoBanner } from "@/components/PromoBanner";
+
+type CategorySetting = { slug: string; label: string; emoji: string; logo_url: string | null };
 
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = searchParams.get("category") || "all";
   const [search, setSearch] = useState("");
+
+  const { data: dbCategories } = useQuery({
+    queryKey: ["category-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("category_settings").select("slug, label, emoji, logo_url").eq("is_active", true).order("display_order");
+      if (error) throw error;
+      return data as CategorySetting[];
+    },
+  });
+
+  const categories = [
+    { slug: "all", label: "Semua", emoji: "🏪", logo_url: null },
+    ...(dbCategories || []),
+  ];
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["products"],
@@ -45,22 +60,26 @@ export default function Products() {
       </div>
 
       <div className="mb-8 flex flex-wrap gap-2">
-        {CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
           <Button
-            key={cat.value}
-            variant={activeCategory === cat.value ? "default" : "outline"}
+            key={cat.slug}
+            variant={activeCategory === cat.slug ? "default" : "outline"}
             size="sm"
             className="gap-1.5 rounded-full"
             onClick={() => {
-              if (cat.value === "all") {
+              if (cat.slug === "all") {
                 searchParams.delete("category");
               } else {
-                searchParams.set("category", cat.value);
+                searchParams.set("category", cat.slug);
               }
               setSearchParams(searchParams);
             }}
           >
-            <span>{cat.emoji}</span>
+            {cat.logo_url ? (
+              <img src={cat.logo_url} alt={cat.label} className="h-4 w-4 object-contain" />
+            ) : (
+              <span>{cat.emoji}</span>
+            )}
             {cat.label}
           </Button>
         ))}

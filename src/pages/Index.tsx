@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { CATEGORIES, CATEGORY_EMOJI, formatRupiah } from "@/lib/constants";
+import { CATEGORY_EMOJI, formatRupiah } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+type CategorySetting = { slug: string; label: string; emoji: string; logo_url: string | null; display_order: number };
 
 const FEATURES = [
   { icon: Shield, title: "100% Aman", desc: "Semua akun diverifikasi" },
@@ -20,9 +22,12 @@ export default function Index() {
   const navigate = useNavigate();
   const [orderNum, setOrderNum] = useState("");
   const [promos, setPromos] = useState<any[]>([]);
+  const [categories, setCategories] = useState<CategorySetting[]>([]);
 
   useEffect(() => {
     supabase.from("promos").select("*").eq("is_active", true).limit(3).then(({ data }) => setPromos(data || []));
+    supabase.from("category_settings").select("slug, label, emoji, logo_url, display_order").eq("is_active", true).order("display_order")
+      .then(({ data }) => { if (data && data.length > 0) setCategories(data as CategorySetting[]); });
   }, []);
 
   const handleCheckOrder = (e: React.FormEvent) => {
@@ -130,13 +135,17 @@ export default function Index() {
         <div className="container mx-auto px-4">
           <h2 className="mb-10 text-center text-2xl font-bold md:text-3xl">Kategori Akun</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            {CATEGORIES.filter((c) => c.value !== 'all').map((cat) => (
-              <Link to={`/products?category=${cat.value}`} key={cat.value}>
+            {categories.map((cat) => (
+              <Link to={`/products?category=${cat.slug}`} key={cat.slug}>
                 <Card className="group border-0 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
                   <CardContent className="flex flex-col items-center gap-2 p-6">
-                    <span className="text-4xl transition-transform duration-300 group-hover:scale-110">
-                      {CATEGORY_EMOJI[cat.value]}
-                    </span>
+                    {cat.logo_url ? (
+                      <img src={cat.logo_url} alt={cat.label} className="h-10 w-10 object-contain transition-transform duration-300 group-hover:scale-110" />
+                    ) : (
+                      <span className="text-4xl transition-transform duration-300 group-hover:scale-110">
+                        {cat.emoji || CATEGORY_EMOJI[cat.slug] || '📦'}
+                      </span>
+                    )}
                     <span className="font-semibold">{cat.label}</span>
                   </CardContent>
                 </Card>

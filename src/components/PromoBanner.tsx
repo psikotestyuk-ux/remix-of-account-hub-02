@@ -37,33 +37,40 @@ export function PromoBanner() {
       {promos.map((p) => (
         <Card
           key={p.id}
-          className="flex min-w-[280px] shrink-0 items-center gap-3 border-0 bg-gradient-to-br from-primary to-accent p-4 text-primary-foreground shadow-lg"
+          className="min-w-[280px] shrink-0 border-0 shadow-lg overflow-hidden"
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20">
-            <Tag className="h-5 w-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold">{p.title}</p>
-            <p className="text-xs opacity-90">
-              {p.discount_type === "percent"
-                ? `Diskon ${p.discount_value}%`
-                : `Diskon ${formatRupiah(p.discount_value)}`}
-              {p.min_purchase > 0 && ` · Min ${formatRupiah(p.min_purchase)}`}
-            </p>
-          </div>
-          <Button
-            size="sm"
-            variant="secondary"
-            className="h-8 shrink-0 gap-1 rounded-lg text-xs"
-            onClick={() => copy(p.code)}
-          >
-            {copiedCode === p.code ? (
-              <Check className="h-3 w-3" />
-            ) : (
-              <Copy className="h-3 w-3" />
+          {p.banner_url && (
+            <img src={p.banner_url} alt={p.title} className="h-28 w-full object-cover" />
+          )}
+          <div className={`flex items-center gap-3 p-4 ${p.banner_url ? "" : "bg-gradient-to-br from-primary to-accent text-primary-foreground"}`}>
+            {!p.banner_url && (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20">
+                <Tag className="h-5 w-5" />
+              </div>
             )}
-            {p.code}
-          </Button>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold">{p.title}</p>
+              <p className={`text-xs ${p.banner_url ? "text-muted-foreground" : "opacity-90"}`}>
+                {p.discount_type === "percent"
+                  ? `Diskon ${p.discount_value}%`
+                  : `Diskon ${formatRupiah(p.discount_value)}`}
+                {p.min_purchase > 0 && ` · Min ${formatRupiah(p.min_purchase)}`}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant={p.banner_url ? "default" : "secondary"}
+              className="h-8 shrink-0 gap-1 rounded-lg text-xs"
+              onClick={() => copy(p.code)}
+            >
+              {copiedCode === p.code ? (
+                <Check className="h-3 w-3" />
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
+              {p.code}
+            </Button>
+          </div>
         </Card>
       ))}
     </div>
