@@ -47,7 +47,7 @@ export default function Auth() {
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: parsed.data.email, password: parsed.data.password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email: parsed.data.email, password: parsed.data.password });
       if (error) {
         const msg = error.message?.toLowerCase() || "";
         if (msg.includes("not confirmed") || msg.includes("confirm")) {
@@ -56,6 +56,14 @@ export default function Auth() {
           return;
         }
         throw error;
+      }
+      // Block admin accounts from using the user portal
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: data.user.id, _role: "admin" });
+      if (isAdmin) {
+        await supabase.auth.signOut();
+        toast.error("Akun ini adalah akun admin. Gunakan halaman admin untuk login.");
+        navigate("/admin/login", { replace: true });
+        return;
       }
       toast.success("Selamat datang!");
       navigate(redirect, { replace: true });
