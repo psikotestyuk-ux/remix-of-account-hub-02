@@ -8,13 +8,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Loader2, Upload, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Upload, X, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 type CategorySetting = {
   slug: string;
   label: string;
-  emoji: string;
   logo_url: string | null;
   display_order: number;
   is_active: boolean;
@@ -23,13 +22,16 @@ type CategorySetting = {
 type FormState = {
   slug: string;
   label: string;
-  emoji: string;
   logo_url: string;
   display_order: number;
   is_active: boolean;
 };
 
-const EMPTY_FORM: FormState = { slug: "", label: "", emoji: "", logo_url: "", display_order: 0, is_active: true };
+const EMPTY_FORM: FormState = { slug: "", label: "", logo_url: "", display_order: 0, is_active: true };
+
+async function ensureBucket(name: string) {
+  await supabase.storage.createBucket(name, { public: true }).catch(() => {});
+}
 
 export default function AdminCategories() {
   const queryClient = useQueryClient();
@@ -45,7 +47,7 @@ export default function AdminCategories() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("category_settings")
-        .select("*")
+        .select("slug, label, logo_url, display_order, is_active")
         .order("display_order", { ascending: true });
       if (error) throw error;
       return data as CategorySetting[];
@@ -56,7 +58,7 @@ export default function AdminCategories() {
     mutationFn: async () => {
       const payload = {
         label: form.label,
-        emoji: form.emoji,
+        emoji: "",
         logo_url: form.logo_url || null,
         display_order: form.display_order,
         is_active: form.is_active,
@@ -99,7 +101,7 @@ export default function AdminCategories() {
 
   const openEdit = (c: CategorySetting) => {
     setEditSlug(c.slug);
-    setForm({ slug: c.slug, label: c.label, emoji: c.emoji, logo_url: c.logo_url || "", display_order: c.display_order, is_active: c.is_active });
+    setForm({ slug: c.slug, label: c.label, logo_url: c.logo_url || "", display_order: c.display_order, is_active: c.is_active });
     setOpen(true);
   };
 
@@ -107,19 +109,20 @@ export default function AdminCategories() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"].includes(file.type)) {
-      toast.error("Format tidak didukung. Gunakan JPG, PNG, WEBP, GIF, atau SVG.");
-      return;
+      toast.error("Gunakan format JPG, PNG, WEBP, GIF, atau SVG."); return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Ukuran file maksimal 2 MB.");
-      return;
-    }
+    if (file.size > 2 * 1024 * 1024) { toast.error("Maksimal 2 MB."); return; }
+
     const ext = file.name.split(".").pop();
-    const slug = editSlug || form.slug || `new-${Date.now()}`;
+    const slug = editSlug || form.slug || `cat-${Date.now()}`;
     const path = `${slug}/${Date.now()}.${ext}`;
+
     setUploading(true);
     try {
-      const { error: uploadErr } = await supabase.storage.from("category-logos").upload(path, file, { upsert: true });
+      await ensureBucket("category-logos");
+      const { error: uploadErr } = await supabase.storage
+        .from("category-logos")
+        .upload(path, file, { upsert: true });
       if (uploadErr) throw uploadErr;
       const { data } = supabase.storage.from("category-logos").getPublicUrl(path);
       setForm((f) => ({ ...f, logo_url: data.publicUrl }));
@@ -148,31 +151,39 @@ export default function AdminCategories() {
               {!editSlug && (
                 <div>
                   <Label>Slug <span className="text-xs text-muted-foreground">(unik, huruf kecil, tanpa spasi)</span></Label>
-                  <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })} placeholder="contoh: facebook" required />
+                  <Input
+                    value={form.slug}
+                    onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })}
+                    placeholder="contoh: facebook"
+                    required
+                  />
                 </div>
               )}
               <div>
-                <Label>Label</Label>
-                <Input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} placeholder="Nama tampil" required />
+                <Label>Nama Kategori</Label>
+                <Input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} placeholder="Mis: Facebook" required />
               </div>
               <div>
-                <Label>Emoji</Label>
-                <Input value={form.emoji} onChange={(e) => setForm({ ...form, emoji: e.target.value })} placeholder="📘" maxLength={4} />
-              </div>
-              <div>
-                <Label>Logo</Label>
+                <Label>Logo / Gambar</Label>
                 <div className="mt-1 space-y-2">
-                  {form.logo_url && (
-                    <div className="flex items-center gap-2">
-                      <img src={form.logo_url} alt="Logo preview" className="h-12 w-12 rounded-lg object-contain border" />
-                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setForm((f) => ({ ...f, logo_url: "" }))}><X className="h-3 w-3" /></Button>
+                  {form.logo_url ? (
+                    <div className="flex items-center gap-3">
+                      <img src={form.logo_url} alt="preview" className="h-14 w-14 rounded-xl object-contain border p-1" />
+                      <Button type="button" variant="ghost" size="sm" className="text-destructive gap-1"
+                        onClick={() => setForm((f) => ({ ...f, logo_url: "" }))}>
+                        <X className="h-3 w-3" /> Hapus
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex h-14 w-14 items-center justify-center rounded-xl border-2 border-dashed text-muted-foreground">
+                      <ImageIcon className="h-6 w-6" />
                     </div>
                   )}
                   <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                  <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => fileRef.current?.click()} disabled={uploading}>
-                    {uploading ? <><Loader2 className="h-3 w-3 animate-spin" /> Mengupload...</> : <><Upload className="h-3 w-3" /> Upload Logo</>}
+                  <Button type="button" variant="outline" className="w-full gap-2" onClick={() => fileRef.current?.click()} disabled={uploading}>
+                    {uploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Mengupload...</> : <><Upload className="h-4 w-4" /> Upload Gambar Logo</>}
                   </Button>
-                  <p className="text-xs text-muted-foreground">Atau masukkan URL langsung:</p>
+                  <p className="text-xs text-muted-foreground text-center">atau paste URL gambar:</p>
                   <Input value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="https://..." />
                 </div>
               </div>
@@ -200,13 +211,17 @@ export default function AdminCategories() {
             <CardContent className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 {c.logo_url ? (
-                  <img src={c.logo_url} alt={c.label} className="h-10 w-10 rounded-lg object-contain border flex-shrink-0" />
+                  <img src={c.logo_url} alt={c.label} className="h-10 w-10 rounded-lg object-contain border p-0.5 flex-shrink-0" />
                 ) : (
-                  <span className="text-2xl flex-shrink-0">{c.emoji || "📦"}</span>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border bg-muted flex-shrink-0">
+                    <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                  </div>
                 )}
                 <div className="min-w-0">
                   <p className="font-medium">{c.label}</p>
-                  <p className="text-xs text-muted-foreground">{c.slug} · urutan {c.display_order} · {c.is_active ? "Aktif" : <span className="text-destructive">Nonaktif</span>}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {c.slug} · urutan {c.display_order} · {c.is_active ? "Aktif" : <span className="text-destructive">Nonaktif</span>}
+                  </p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -228,10 +243,8 @@ export default function AdminCategories() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteSlug && deleteMutation.mutate(deleteSlug)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogAction onClick={() => deleteSlug && deleteMutation.mutate(deleteSlug)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Hapus
             </AlertDialogAction>
           </AlertDialogFooter>
