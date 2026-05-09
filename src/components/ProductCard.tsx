@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cart";
 import { formatRupiah, getStockBadge, CATEGORY_EMOJI } from "@/lib/constants";
+import { useCategoryLogos } from "@/hooks/use-category-logos";
 import { toast } from "sonner";
 
 interface ProductCardProps {
@@ -21,6 +22,8 @@ interface ProductCardProps {
 export function ProductCard({ id, name, category, price, stock, rating, image_url }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem);
   const stockBadge = getStockBadge(stock);
+  const logos = useCategoryLogos();
+  const categoryLogo = logos[category];
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -34,7 +37,13 @@ export function ProductCard({ id, name, category, price, stock, rating, image_ur
     <Link to={`/products/${id}`}>
       <Card className="group overflow-hidden border-0 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
         <div className="relative flex h-40 items-center justify-center bg-gradient-to-br from-muted to-secondary">
-          <span className="text-6xl">{CATEGORY_EMOJI[category] || '📦'}</span>
+          {image_url ? (
+            <img src={image_url} alt={name} className="h-full w-full object-cover" />
+          ) : categoryLogo ? (
+            <img src={categoryLogo} alt={category} className="h-20 w-20 object-contain" />
+          ) : (
+            <span className="text-6xl">{CATEGORY_EMOJI[category] || '📦'}</span>
+          )}
           <div className="absolute right-3 top-3">
             <Badge
               variant={stockBadge.variant}
