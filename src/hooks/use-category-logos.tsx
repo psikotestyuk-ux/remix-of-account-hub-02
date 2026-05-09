@@ -5,7 +5,7 @@ export function useCategoryLogos() {
   const { data } = useQuery({
     queryKey: ["category-logos-map"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("category_settings")
         .select("slug, logo_url")
         .eq("is_active", true);
