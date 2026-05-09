@@ -131,6 +131,36 @@ export type Database = {
           },
         ]
       }
+      category_settings: {
+        Row: {
+          display_order: number | null
+          emoji: string
+          is_active: boolean | null
+          label: string
+          logo_url: string | null
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          display_order?: number | null
+          emoji?: string
+          is_active?: boolean | null
+          label: string
+          logo_url?: string | null
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          display_order?: number | null
+          emoji?: string
+          is_active?: boolean | null
+          label?: string
+          logo_url?: string | null
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           admin_notes: string | null
