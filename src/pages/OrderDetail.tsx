@@ -186,13 +186,22 @@ export default function OrderDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("account_credentials")
-        .select("id, credentials_encrypted, email, password, twofa_secret, recovery_email, cookies, notes, created_at")
+        .select("id, credentials_encrypted, email, password, twofa_secret, recovery_email, cookies, notes, created_at, updated_at, grade_id")
         .eq("sold_to_order", order!.id)
-        .order("created_at", { ascending: true });
+        .order("updated_at", { ascending: true });
       if (error) throw error;
-      return data;
+      const gradeIds = Array.from(new Set((data || []).map((c: any) => c.grade_id).filter(Boolean)));
+      let gradeMap: Record<string, string> = {};
+      if (gradeIds.length > 0) {
+        const { data: grades } = await supabase
+          .from("account_grades")
+          .select("id, grade")
+          .in("id", gradeIds);
+        gradeMap = Object.fromEntries((grades || []).map((g: any) => [g.id, g.grade]));
+      }
+      return (data || []).map((c: any) => ({ ...c, grade_label: c.grade_id ? gradeMap[c.grade_id] : null }));
     },
-    enabled: !!order && order.payment_status === "paid" && order.order_status === "completed",
+    enabled: !!order && order.payment_status === "paid",
   });
 
   // Ambil field terstruktur jika ada, fallback parse dari credentials_encrypted
@@ -458,28 +467,44 @@ export default function OrderDetail() {
           </Card>
         )}
 
-        {order.order_status === "completed" && credentials && credentials.length > 0 && (
+        {order.payment_status === "paid" && credentials && credentials.length > 0 && (
           <Card className="border-0 shadow-lg md:col-span-2">
             <CardContent className="p-6">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <KeyRound className="h-5 w-5 text-primary" />
-                  <h3 className="font-bold">Akun Kamu ({credentials.length})</h3>
+                  <h3 className="font-bold">
+                    Akun Terkirim ({credentials.length}
+                    {order.quantity > credentials.length ? ` / ${order.quantity}` : ""})
+                  </h3>
                 </div>
                 <Button size="sm" variant="outline" className="gap-2 rounded-lg" onClick={downloadAll}>
                   <Download className="h-4 w-4" /> Download .txt
                 </Button>
               </div>
+              {order.quantity > credentials.length && (
+                <div className="mb-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-xs text-yellow-900">
+                  ⏳ {credentials.length} dari {order.quantity} akun sudah dikirim. Sisanya akan otomatis dikirim ulang ke pesanan ini begitu stok tersedia kembali.
+                </div>
+              )}
               <div className="mb-3 rounded-lg border border-accent/30 bg-accent/10 p-3 text-xs text-foreground/80">
                 ⚠️ Simpan kredensial ini dengan aman. Untuk keamanan, segera ganti password setelah login pertama.
               </div>
               <div className="space-y-3">
                 {credentials.map((c, idx) => {
                   const f = getFields(c);
+                  const deliveredAt = c.updated_at || c.created_at;
                   return (
                     <div key={c.id} className="rounded-xl border bg-muted/30 p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <Badge variant="secondary" className="rounded-md">Akun #{idx + 1}</Badge>
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary" className="rounded-md">Akun #{idx + 1}</Badge>
+                          {c.grade_label && <Badge variant="outline">Grade {c.grade_label}</Badge>}
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            Dikirim {new Date(deliveredAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
+                          </span>
+                        </div>
                         <Button
                           size="sm"
                           variant="ghost"
