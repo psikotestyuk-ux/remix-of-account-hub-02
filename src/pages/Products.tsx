@@ -41,16 +41,22 @@ export default function Products() {
     },
   });
 
-  // Realtime: invalidate only when something relevant actually changes
+  // Realtime: patch the cache directly from payloads instead of refetching.
+  // Only fall back to a full refetch for INSERTs (need full row incl. server defaults).
   useEffect(() => {
-    let pending = false;
-    const scheduleInvalidate = () => {
-      if (pending) return;
-      pending = true;
+    type ProductRow = NonNullable<typeof products>[number];
+    const RELEVANT_FIELDS: (keyof ProductRow)[] = [
+      "stock", "status", "price", "name", "category", "image_url", "rating",
+    ];
+
+    let refetchPending = false;
+    const scheduleRefetch = () => {
+      if (refetchPending) return;
+      refetchPending = true;
       setTimeout(() => {
-        pending = false;
+        refetchPending = false;
         queryClient.invalidateQueries({ queryKey: ["products"] });
-      }, 400); // debounce burst updates
+      }, 400);
     };
 
     const channel = supabase
@@ -59,31 +65,52 @@ export default function Products() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "products" },
         (payload: any) => {
-          if (payload.new?.status === "active") scheduleInvalidate();
+          // New row → fetch once to ensure full shape consistency
+          if (payload.new?.status === "active") scheduleRefetch();
         }
       )
       .on(
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "products" },
-        () => scheduleInvalidate()
+        (payload: any) => {
+          const id = payload.old?.id;
+          if (!id) return;
+          queryClient.setQueryData<ProductRow[]>(["products"], (prev) =>
+            prev ? prev.filter((p) => p.id !== id) : prev
+          );
+        }
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "products" },
         (payload: any) => {
-          const oldRow = payload.old || {};
-          const newRow = payload.new || {};
-          // Only refresh if user-visible fields changed
-          if (
-            oldRow.stock !== newRow.stock ||
-            oldRow.status !== newRow.status ||
-            oldRow.price !== newRow.price ||
-            oldRow.name !== newRow.name ||
-            oldRow.category !== newRow.category ||
-            oldRow.image_url !== newRow.image_url
-          ) {
-            scheduleInvalidate();
-          }
+          const oldRow = (payload.old || {}) as Partial<ProductRow>;
+          const newRow = (payload.new || {}) as Partial<ProductRow>;
+          const id = newRow.id || oldRow.id;
+          if (!id) return;
+
+          const changed = RELEVANT_FIELDS.some(
+            (k) => oldRow[k] !== newRow[k]
+          );
+          if (!changed) return;
+
+          queryClient.setQueryData<ProductRow[]>(["products"], (prev) => {
+            if (!prev) return prev;
+            const exists = prev.some((p) => p.id === id);
+            // Became inactive → remove
+            if (newRow.status && newRow.status !== "active") {
+              return exists ? prev.filter((p) => p.id !== id) : prev;
+            }
+            // Became active → fetch once for full row
+            if (!exists && newRow.status === "active") {
+              scheduleRefetch();
+              return prev;
+            }
+            // Patch in place — preserves list ordering and avoids extra requests
+            return prev.map((p) =>
+              p.id === id ? { ...p, ...(newRow as ProductRow) } : p
+            );
+          });
         }
       )
       .subscribe();
