@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PromoBanner } from "@/components/PromoBanner";
 
@@ -15,6 +16,7 @@ export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = searchParams.get("category") || "all";
   const [search, setSearch] = useState("");
+  const queryClient = useQueryClient();
 
   const { data: dbCategories } = useQuery({
     queryKey: ["category-settings"],
@@ -38,6 +40,36 @@ export default function Products() {
       return data;
     },
   });
+
+  // Realtime: invalidate products list whenever stock/products change
+  useEffect(() => {
+    const channel = supabase
+      .channel("products-stock-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "products" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["products"] });
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  // Aggregate stock per category for ready badge
+  const stockByCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    let total = 0;
+    (products || []).forEach((p) => {
+      const s = Math.max(0, p.stock || 0);
+      map[p.category] = (map[p.category] || 0) + s;
+      total += s;
+    });
+    map["all"] = total;
+    return map;
+  }, [products]);
 
   const filtered = products?.filter((p) => {
     const matchCategory = activeCategory === "all" || p.category === activeCategory;
@@ -81,6 +113,16 @@ export default function Products() {
               <span>{cat.emoji}</span>
             )}
             {cat.label}
+            <Badge
+              variant="secondary"
+              className={`ml-1 h-5 px-1.5 text-[10px] font-semibold ${
+                (stockByCategory[cat.slug] || 0) === 0
+                  ? "bg-muted text-muted-foreground"
+                  : "bg-green-100 text-green-700"
+              }`}
+            >
+              {stockByCategory[cat.slug] || 0}
+            </Badge>
           </Button>
         ))}
       </div>
