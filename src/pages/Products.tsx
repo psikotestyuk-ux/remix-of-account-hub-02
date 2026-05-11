@@ -41,15 +41,49 @@ export default function Products() {
     },
   });
 
-  // Realtime: invalidate products list whenever stock/products change
+  // Realtime: invalidate only when something relevant actually changes
   useEffect(() => {
+    let pending = false;
+    const scheduleInvalidate = () => {
+      if (pending) return;
+      pending = true;
+      setTimeout(() => {
+        pending = false;
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+      }, 400); // debounce burst updates
+    };
+
     const channel = supabase
       .channel("products-stock-realtime")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "products" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["products"] });
+        { event: "INSERT", schema: "public", table: "products" },
+        (payload: any) => {
+          if (payload.new?.status === "active") scheduleInvalidate();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "products" },
+        () => scheduleInvalidate()
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "products" },
+        (payload: any) => {
+          const oldRow = payload.old || {};
+          const newRow = payload.new || {};
+          // Only refresh if user-visible fields changed
+          if (
+            oldRow.stock !== newRow.stock ||
+            oldRow.status !== newRow.status ||
+            oldRow.price !== newRow.price ||
+            oldRow.name !== newRow.name ||
+            oldRow.category !== newRow.category ||
+            oldRow.image_url !== newRow.image_url
+          ) {
+            scheduleInvalidate();
+          }
         }
       )
       .subscribe();
