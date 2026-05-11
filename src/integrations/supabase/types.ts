@@ -577,6 +577,10 @@ export type Database = {
           success: boolean
         }[]
       }
+      recompute_product_stock: {
+        Args: { _product_id: string }
+        Returns: undefined
+      }
       topup_wallet: {
         Args: { _amount: number; _notes?: string; _payment_method?: string }
         Returns: {
