@@ -7,6 +7,7 @@ import { formatRupiah, getStockBadge, CATEGORY_EMOJI } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PromoBannerSlot } from "@/components/PromoBannerSlot";
 import { toast } from "sonner";
 
 export default function ProductDetail() {
@@ -76,6 +77,7 @@ export default function ProductDetail() {
       <Link to="/products" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> Kembali ke Produk
       </Link>
+      <PromoBannerSlot placement="product_detail" className="mb-6" />
       <div className="grid gap-8 md:grid-cols-2">
         <div className="flex items-center justify-center rounded-2xl bg-gradient-to-br from-muted to-secondary p-12">
           <span className="text-9xl">{CATEGORY_EMOJI[product.category] || '📦'}</span>
