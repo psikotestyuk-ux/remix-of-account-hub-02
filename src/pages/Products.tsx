@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PromoBanner } from "@/components/PromoBanner";
+import { PromoBannerSlot } from "@/components/PromoBannerSlot";
 
 type CategorySetting = { slug: string; label: string; emoji: string; logo_url: string | null };
 
@@ -142,6 +143,8 @@ export default function Products() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="mb-2 text-3xl font-bold">Semua Produk</h1>
       <p className="mb-6 text-muted-foreground">Temukan akun digital terbaik untuk kebutuhanmu</p>
+
+      <PromoBannerSlot placement="products_top" className="mb-6" />
 
       <PromoBanner />
 
