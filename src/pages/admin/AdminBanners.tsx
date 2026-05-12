@@ -429,6 +429,8 @@ export default function AdminBanners() {
                 <Label htmlFor="active">Aktif</Label>
               </div>
 
+              <PlacementPreview form={form} />
+
               <Button type="submit" disabled={saveMutation.isPending || uploading} className="w-full">
                 {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : editId ? "Update" : "Simpan"}
               </Button>
