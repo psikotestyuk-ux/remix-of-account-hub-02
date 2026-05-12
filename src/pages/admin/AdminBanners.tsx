@@ -54,6 +54,20 @@ const PLACEMENT_LABEL: Record<Placement, string> = {
   cart_checkout: "Cart & Checkout",
 };
 
+const PLACEMENT_ASPECT: Record<Placement, string> = {
+  home_hero: "aspect-[16/6] md:aspect-[21/7]",
+  products_top: "aspect-[16/5] md:aspect-[21/6]",
+  product_detail: "aspect-[16/5]",
+  cart_checkout: "aspect-[16/5]",
+};
+
+const PLACEMENT_WIDTH: Record<Placement, string> = {
+  home_hero: "w-full max-w-3xl",
+  products_top: "w-full max-w-2xl",
+  product_detail: "w-full max-w-md",
+  cart_checkout: "w-full max-w-md",
+};
+
 type Banner = {
   id: string;
   image_url: string;
