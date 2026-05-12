@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { CATEGORY_EMOJI, formatRupiah } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
+import { PromoBannerSlot } from "@/components/PromoBannerSlot";
 import { toast } from "sonner";
 
 type CategorySetting = { slug: string; label: string; emoji: string; logo_url: string | null; display_order: number };
@@ -72,6 +73,11 @@ export default function Index() {
             </Button>
           </form>
         </div>
+      </section>
+
+      {/* Hero Banner Slot */}
+      <section className="container mx-auto px-4 pt-8">
+        <PromoBannerSlot placement="home_hero" />
       </section>
 
       {/* Promo Banners */}

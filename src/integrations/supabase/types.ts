@@ -383,6 +383,51 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_banners: {
+        Row: {
+          created_at: string
+          display_order: number
+          ends_at: string | null
+          id: string
+          image_url: string
+          is_active: boolean
+          placement: Database["public"]["Enums"]["banner_placement"]
+          product_id: string | null
+          starts_at: string | null
+          subtitle: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          ends_at?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean
+          placement: Database["public"]["Enums"]["banner_placement"]
+          product_id?: string | null
+          starts_at?: string | null
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          ends_at?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          placement?: Database["public"]["Enums"]["banner_placement"]
+          product_id?: string | null
+          starts_at?: string | null
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       promos: {
         Row: {
           banner_url: string | null
@@ -605,6 +650,11 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      banner_placement:
+        | "home_hero"
+        | "products_top"
+        | "product_detail"
+        | "cart_checkout"
       discount_type: "percent" | "fixed"
       order_status: "processing" | "completed" | "cancelled"
       payment_status: "pending" | "paid" | "failed" | "expired"
@@ -746,6 +796,12 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      banner_placement: [
+        "home_hero",
+        "products_top",
+        "product_detail",
+        "cart_checkout",
+      ],
       discount_type: ["percent", "fixed"],
       order_status: ["processing", "completed", "cancelled"],
       payment_status: ["pending", "paid", "failed", "expired"],

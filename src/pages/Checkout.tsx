@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { PromoBannerSlot } from "@/components/PromoBannerSlot";
 import { toast } from "sonner";
 
 type Grade = { id: string; grade: string; description: string | null; base_price: number; product_id: string };
@@ -103,6 +104,8 @@ export default function Checkout() {
         <ArrowLeft className="h-4 w-4" /> Kembali
       </Link>
       <h1 className="mb-6 text-2xl font-bold">Checkout</h1>
+
+      <PromoBannerSlot placement="cart_checkout" className="mb-6" />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <form onSubmit={handleSubmit} className="space-y-5">

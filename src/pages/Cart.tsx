@@ -4,6 +4,7 @@ import { useCartStore } from "@/store/cart";
 import { formatRupiah, CATEGORY_EMOJI } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { PromoBannerSlot } from "@/components/PromoBannerSlot";
 
 export default function Cart() {
   const { items, removeItem, updateQuantity, getTotalPrice, clearCart } = useCartStore();
@@ -29,6 +30,8 @@ export default function Cart() {
         <ArrowLeft className="h-4 w-4" /> Lanjut Belanja
       </Link>
       <h1 className="mb-6 text-2xl font-bold">Keranjang Belanja</h1>
+
+      <PromoBannerSlot placement="cart_checkout" className="mb-6" />
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">

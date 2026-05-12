@@ -33,6 +33,7 @@ import AdminImportCredentials from "./pages/admin/AdminImportCredentials";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import AdminCategories from "./pages/admin/AdminCategories";
+import AdminBanners from "./pages/admin/AdminBanners";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -86,6 +87,7 @@ const App = () => (
                     <Route path="users" element={<AdminUsers />} />
                     <Route path="users/:id" element={<AdminUserDetail />} />
                     <Route path="categories" element={<AdminCategories />} />
+                    <Route path="banners" element={<AdminBanners />} />
                   </Route>
                 </Routes>
               </AdminAuthProvider>

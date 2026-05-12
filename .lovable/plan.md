@@ -1,65 +1,61 @@
+## Tujuan
 
-# BuyingAccount — Digital Account Marketplace
+Tambahkan sistem **Banner Promo** yang bisa diupload admin, dijadwalkan, diatur urutan & posisi, dan tampil di slot strategis. Klik banner = langsung ke produk terkait.
 
-## Overview
-Marketplace jual-beli akun digital (Facebook, Instagram, TikTok, Gaming, Tools, Crypto) dengan UI Bahasa Indonesia, payment mock (Xendit nanti), admin panel, dan email otomatis via SendGrid (nanti).
+## Penempatan Slot
 
-## Design
-- **Warna utama**: Gradient Indigo-600 (#4F46E5) → Blue-600 (#2563EB)
-- **Background**: Gray-50 (#F9FAFB), Card: white, shadow-lg, rounded-2xl
-- **Button**: gradient indigo-to-blue, rounded-xl, hover scale
-- **Badge stok**: Green (ready), Orange pulse (terbatas), Red (habis)
-- **Rating**: bintang kuning 4.8 hardcoded
+1. **Hero Homepage** (atas, carousel besar) — slot `home_hero`
+2. **Halaman Produk** (strip di atas grid) — slot `products_top`
+3. **Detail Produk** (banner kecil) — slot `product_detail`
+4. **Cart & Checkout** (banner promo) — slot `cart_checkout`
 
-## Database (Supabase)
-1. **products** — name, slug, category (facebook/instagram/tiktok/gaming/tools/crypto), price, description, features (jsonb), stock, image_url, status (active/inactive), rating (default 4.8)
-2. **account_credentials** — product_id (FK), credentials_encrypted, is_sold, sold_to_order
-3. **orders** — order_number, customer_name, customer_email, customer_phone, product_id, quantity, total_price, payment_status (pending/paid/failed/expired), payment_method, order_status (processing/completed/cancelled), notes
-4. **Admin role** via user_roles table with RLS
+## Database
 
-## Pages
+Tabel baru `promo_banners`:
+- `image_url` (storage Lovable Cloud)
+- `title`, `subtitle` (opsional, untuk alt/aksesibilitas)
+- `product_id` (FK ke produk → tujuan klik)
+- `placement` (enum: home_hero, products_top, product_detail, cart_checkout)
+- `display_order` (urutan)
+- `starts_at`, `ends_at` (jadwal aktif)
+- `is_active` (toggle manual)
 
-### Public Pages
-1. **`/`** — Landing page: hero with gradient, fitur highlights, kategori grid, CTA
-2. **`/products`** — Product listing with kategori filter tabs, search, grid of ProductCards
-3. **`/products/:id`** — Detail produk: gambar, nama, kategori, rating, deskripsi, fitur list, stok badge, harga Rupiah, tombol Beli & Tambah Keranjang
-4. **`/cart`** — Keranjang: list items dari Zustand store, ubah qty, hapus, total, tombol Checkout
-5. **`/checkout`** — Form (nama, email, WA), submit → create order → mock payment → redirect success
-6. **`/order/:orderNumber`** — Status order: nomor, status bayar, status kirim, detail produk
-7. **`/order-success`** — Animasi checkmark, nomor order, tombol Cek Status & Belanja Lagi
+Bucket storage baru `promo-banners` (public). RLS:
+- Public: SELECT banner aktif (sesuai jadwal)
+- Admin: full CRUD
 
-### Admin Pages (protected, requires admin role)
-8. **`/admin`** — Dashboard: total orders, revenue, produk count
-9. **`/admin/products`** — CRUD produk (add/edit/delete), manage stok
-10. **`/admin/orders`** — List orders, update status
-11. **`/admin/credentials`** — Manage account credentials per produk
+## Komponen Frontend
 
-## Components
-- **Navbar** — Logo, nav links (Beranda, Produk, Kategori), cart badge with count, cart drawer side panel
-- **Footer** — Links, copyright
-- **ProductCard** — Image/emoji fallback, name, category, rating stars, price, stock badge, favorite button
-- **CartDrawer** — Slide-in panel showing cart items, total, checkout button
-- **CheckoutForm** — Validated form (nama, email, WA number)
+`<PromoBannerSlot placement="..." />` — fetch banner aktif untuk slot tsb, render carousel/strip, klik = navigate ke `/product/:slug`. Otomatis hidden jika kosong.
 
-## State Management
-- **Zustand** cart store: add, remove, update quantity, clear, persist to localStorage
+Dipasang di:
+- `src/pages/Index.tsx` (atas hero / dibawah hero)
+- `src/pages/Products.tsx` (atas grid produk)
+- `src/pages/ProductDetail.tsx`
+- `src/pages/Cart.tsx` & `src/pages/Checkout.tsx`
 
-## Auth & Admin
-- Supabase Auth (email/password) for admin login
-- user_roles table for admin role check
-- Protected admin routes
+## Admin Panel
 
-## Payment Flow (Mock for now)
-- Checkout creates order with status "pending"
-- Mock payment simulation (tombol "Simulasi Bayar") updates to "paid"
-- Placeholder for Xendit integration later (edge function ready)
+Halaman baru `/admin/banners` (`AdminBanners.tsx`):
+- List semua banner (preview gambar, status aktif/expired, slot, produk tujuan)
+- Form: upload gambar, pilih produk, pilih slot, urutan, tanggal mulai/akhir, toggle aktif
+- Aksi: edit, hapus, drag-to-reorder
+- Link ditambahkan di `AdminLayout.tsx` sidebar
 
-## Fase Implementation Order
-1. Database schema + seed sample products
-2. Landing page + Navbar + Footer
-3. Products listing + ProductCard + filter
-4. Product detail page
-5. Cart (Zustand store + cart page + drawer)
-6. Checkout + Order creation
-7. Order status + success page
-8. Admin auth + admin panel (dashboard, products CRUD, orders, credentials)
+## File yang Dibuat / Diubah
+
+**Baru**
+- `supabase/migrations/<timestamp>_promo_banners.sql` — tabel, enum, RLS, bucket
+- `src/components/PromoBannerSlot.tsx`
+- `src/pages/admin/AdminBanners.tsx`
+
+**Diedit**
+- `src/pages/Index.tsx`, `Products.tsx`, `ProductDetail.tsx`, `Cart.tsx`, `Checkout.tsx` — pasang slot
+- `src/pages/admin/AdminLayout.tsx` — menu Banner
+- `src/App.tsx` — route admin baru
+
+## Catatan
+
+- Banner hanya tampil jika `is_active=true` AND `now()` di antara `starts_at`/`ends_at` (NULL = tidak dibatasi).
+- Carousel pakai `embla-carousel-react` (sudah ada via shadcn).
+- Tidak menyentuh sistem promo code (`promos`) yang sudah ada — ini fitur banner terpisah.
