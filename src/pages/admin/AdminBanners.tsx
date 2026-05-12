@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   Plus,
   Pencil,
@@ -39,8 +40,10 @@ import {
   Upload,
   X,
   ImageIcon,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 type Placement = "home_hero" | "products_top" | "product_detail" | "cart_checkout";
 
@@ -49,6 +52,20 @@ const PLACEMENT_LABEL: Record<Placement, string> = {
   products_top: "Halaman Produk (Atas)",
   product_detail: "Detail Produk",
   cart_checkout: "Cart & Checkout",
+};
+
+const PLACEMENT_ASPECT: Record<Placement, string> = {
+  home_hero: "aspect-[16/6] md:aspect-[21/7]",
+  products_top: "aspect-[16/5] md:aspect-[21/6]",
+  product_detail: "aspect-[16/5]",
+  cart_checkout: "aspect-[16/5]",
+};
+
+const PLACEMENT_WIDTH: Record<Placement, string> = {
+  home_hero: "w-full max-w-3xl",
+  products_top: "w-full max-w-2xl",
+  product_detail: "w-full max-w-md",
+  cart_checkout: "w-full max-w-md",
 };
 
 type Banner = {
@@ -93,6 +110,93 @@ function toLocalInput(iso: string | null) {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function BannerPreview({
+  imageUrl,
+  title,
+  subtitle,
+  placement,
+}: {
+  imageUrl: string;
+  title: string;
+  subtitle: string;
+  placement: Placement;
+}) {
+  if (!imageUrl) {
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-center rounded-xl border-2 border-dashed bg-muted text-muted-foreground",
+          PLACEMENT_ASPECT[placement]
+        )}
+      >
+        <div className="text-center">
+          <ImageIcon className="mx-auto h-6 w-6 opacity-50" />
+          <p className="mt-1 text-xs">Upload gambar untuk preview</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "relative w-full overflow-hidden rounded-xl bg-muted",
+        PLACEMENT_ASPECT[placement]
+      )}
+    >
+      <img
+        src={imageUrl}
+        alt={title || "Preview banner"}
+        className="h-full w-full object-cover"
+      />
+      {(title || subtitle) && (
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent p-3 text-white">
+          {title && <p className="text-sm font-bold drop-shadow">{title}</p>}
+          {subtitle && <p className="text-xs opacity-90">{subtitle}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlacementPreview({
+  form,
+}: {
+  form: FormState;
+}) {
+  const placements: Placement[] = ["home_hero", "products_top", "product_detail", "cart_checkout"];
+
+  return (
+    <Accordion type="single" collapsible className="w-full">
+      <AccordionItem value="preview" className="border-0">
+        <AccordionTrigger className="rounded-lg bg-muted/50 px-3 py-2 text-sm hover:no-underline hover:bg-muted">
+          <div className="flex items-center gap-2">
+            <Eye className="h-4 w-4 text-muted-foreground" />
+            <span>Preview Tampilan per Placement</span>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="pt-3">
+          <div className="space-y-4">
+            {placements.map((p) => (
+              <div key={p} className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">{PLACEMENT_LABEL[p]}</p>
+                <div className={cn("mx-auto", PLACEMENT_WIDTH[p])}>
+                  <BannerPreview
+                    imageUrl={form.image_url}
+                    title={form.title}
+                    subtitle={form.subtitle}
+                    placement={p}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
 }
 
 export default function AdminBanners() {
@@ -324,6 +428,8 @@ export default function AdminBanners() {
                 <Switch id="active" checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
                 <Label htmlFor="active">Aktif</Label>
               </div>
+
+              <PlacementPreview form={form} />
 
               <Button type="submit" disabled={saveMutation.isPending || uploading} className="w-full">
                 {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : editId ? "Update" : "Simpan"}
