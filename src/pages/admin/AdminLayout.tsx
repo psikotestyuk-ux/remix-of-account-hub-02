@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   ChevronDown,
   Grid2x2,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +47,7 @@ const NAV_ITEMS = [
   { to: "/admin/categories", icon: Grid2x2, label: "Kategori" },
   { to: "/admin/products", icon: Package, label: "Produk" },
   { to: "/admin/promos", icon: Tag, label: "Promo" },
+  { to: "/admin/banners", icon: Megaphone, label: "Banner" },
   { to: "/admin/orders", icon: ShoppingCart, label: "Orders" },
   { to: "/admin/credentials", icon: Key, label: "Sales History" },
   { to: "/admin/import", icon: Upload, label: "Import TXT" },
