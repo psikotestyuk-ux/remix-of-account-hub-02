@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   Plus,
   Pencil,
@@ -39,8 +40,10 @@ import {
   Upload,
   X,
   ImageIcon,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 type Placement = "home_hero" | "products_top" | "product_detail" | "cart_checkout";
 
