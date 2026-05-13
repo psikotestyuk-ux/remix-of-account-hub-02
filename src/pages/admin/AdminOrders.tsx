@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Eye, Check, X, Loader2 } from "lucide-react";
+import { Eye, Check, X, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminOrders() {
@@ -20,6 +20,9 @@ export default function AdminOrders() {
   const [reviewing, setReviewing] = useState<any | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [tab, setTab] = useState<"pending" | "paid" | "rejected" | "all">("pending");
+  const [fulfilling, setFulfilling] = useState<any | null>(null);
+  const [fulfillNotes, setFulfillNotes] = useState("");
+  const [pickedCreds, setPickedCreds] = useState<string[]>([]);
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders-list"],
@@ -57,6 +60,45 @@ export default function AdminOrders() {
       queryClient.invalidateQueries({ queryKey: ["admin-orders-list"] });
       setReviewing(null);
       setAdminNotes("");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const { data: availableCreds } = useQuery({
+    queryKey: ["admin-available-creds", fulfilling?.product_id, fulfilling?.grade_id],
+    enabled: !!fulfilling?.product_id,
+    queryFn: async () => {
+      let q = supabase
+        .from("account_credentials")
+        .select("id, email, grade_id, account_grades(grade)")
+        .eq("product_id", fulfilling.product_id)
+        .eq("is_sold", false)
+        .order("created_at", { ascending: true });
+      if (fulfilling.grade_id) q = q.eq("grade_id", fulfilling.grade_id);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const fulfillMutation = useMutation({
+    mutationFn: async ({ orderId, credentialIds, notes }: { orderId: string; credentialIds: string[] | null; notes: string }) => {
+      const { data, error } = await supabase.rpc("admin_fulfill_order", {
+        _order_id: orderId,
+        _credential_ids: credentialIds && credentialIds.length > 0 ? credentialIds : null,
+        _notes: notes || null,
+      });
+      if (error) throw error;
+      const r = Array.isArray(data) ? data[0] : data;
+      if (!r?.success) throw new Error(r?.message || "Gagal");
+      return r;
+    },
+    onSuccess: (r: any) => {
+      toast.success(`Berhasil assign ${r.assigned_count} akun (${r.total_assigned}/${r.needed})`);
+      queryClient.invalidateQueries({ queryKey: ["admin-orders-list"] });
+      setFulfilling(null);
+      setFulfillNotes("");
+      setPickedCreds([]);
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -133,6 +175,11 @@ export default function AdminOrders() {
                         Review
                       </Button>
                     )}
+                    {order.payment_status === "paid" && order.order_status !== "completed" && order.order_status !== "cancelled" && (
+                      <Button size="sm" variant="outline" className="gap-1" onClick={() => { setFulfilling(order); setFulfillNotes(""); setPickedCreds([]); }}>
+                        <Send className="h-3 w-3" /> Kirim Manual
+                      </Button>
+                    )}
                     <Select value={order.payment_status} onValueChange={(v) => updateStatus.mutate({ id: order.id, field: "payment_status", value: v })}>
                       <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -171,6 +218,50 @@ export default function AdminOrders() {
               )}
               <Button asChild variant="outline" size="sm" className="w-full">
                 <a href={previewUrl} target="_blank" rel="noopener noreferrer">Buka di tab baru</a>
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual fulfill modal */}
+      <Dialog open={!!fulfilling} onOpenChange={(v) => !v && setFulfilling(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader><DialogTitle>Kirim Akun Manual</DialogTitle></DialogHeader>
+          {fulfilling && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted p-3 text-sm">
+                <p><strong>{fulfilling.order_number}</strong> — {fulfilling.products?.name}</p>
+                <p className="text-muted-foreground">{fulfilling.customer_name} • butuh {fulfilling.quantity} akun</p>
+              </div>
+              <div>
+                <Label className="mb-2 block">Pilih akun (kosongkan = otomatis ambil dari stok)</Label>
+                <div className="max-h-56 overflow-y-auto rounded-md border">
+                  {!availableCreds || availableCreds.length === 0 ? (
+                    <p className="p-3 text-sm text-muted-foreground">Tidak ada stok tersedia. Akan dikirim manual via catatan saja.</p>
+                  ) : (
+                    availableCreds.map((c: any) => {
+                      const checked = pickedCreds.includes(c.id);
+                      return (
+                        <label key={c.id} className="flex cursor-pointer items-center gap-2 border-b px-3 py-2 text-sm hover:bg-muted/50 last:border-b-0">
+                          <input type="checkbox" checked={checked} onChange={(e) => {
+                            setPickedCreds((prev) => e.target.checked ? [...prev, c.id] : prev.filter((x) => x !== c.id));
+                          }} />
+                          <span className="flex-1 truncate">{c.email || c.id.slice(0, 8)}</span>
+                          {c.account_grades?.grade && <Badge variant="outline" className="text-xs">G{c.account_grades.grade}</Badge>}
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">Tersedia: {availableCreds?.length || 0} akun {fulfilling.grade_id ? "(grade sesuai)" : ""}</p>
+              </div>
+              <div>
+                <Label>Catatan untuk pembeli (opsional)</Label>
+                <Textarea value={fulfillNotes} onChange={(e) => setFulfillNotes(e.target.value)} placeholder="Mis: Detail akun: email@x.com / pass / 2FA: ..." rows={4} />
+              </div>
+              <Button className="w-full gap-2" disabled={fulfillMutation.isPending} onClick={() => fulfillMutation.mutate({ orderId: fulfilling.id, credentialIds: pickedCreds, notes: fulfillNotes })}>
+                {fulfillMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4" /> Kirim & Simpan Catatan</>}
               </Button>
             </div>
           )}
