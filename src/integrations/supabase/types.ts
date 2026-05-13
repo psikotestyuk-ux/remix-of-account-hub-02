@@ -577,6 +577,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_fulfill_order: {
+        Args: { _credential_ids?: string[]; _notes?: string; _order_id: string }
+        Returns: {
+          assigned_count: number
+          message: string
+          needed: number
+          success: boolean
+          total_assigned: number
+        }[]
+      }
       generate_short_order_code: { Args: never; Returns: string }
       get_order_by_number: {
         Args: { _order_number: string }
