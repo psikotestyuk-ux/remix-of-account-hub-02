@@ -587,6 +587,16 @@ export type Database = {
           total_assigned: number
         }[]
       }
+      admin_fulfill_order_internal: {
+        Args: { _credential_ids?: string[]; _notes?: string; _order_id: string }
+        Returns: {
+          assigned_count: number
+          message: string
+          needed: number
+          success: boolean
+          total_assigned: number
+        }[]
+      }
       generate_short_order_code: { Args: never; Returns: string }
       get_order_by_number: {
         Args: { _order_number: string }
@@ -632,6 +642,23 @@ export type Database = {
           success: boolean
         }[]
       }
+      purchase_with_wallet_internal: {
+        Args: {
+          _customer_name?: string
+          _customer_phone?: string
+          _grade_id?: string
+          _package_id?: string
+          _product_id: string
+          _quantity: number
+        }
+        Returns: {
+          message: string
+          new_balance: number
+          order_id: string
+          order_number: string
+          success: boolean
+        }[]
+      }
       recompute_product_stock: {
         Args: { _product_id: string }
         Returns: undefined
@@ -645,7 +672,28 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      topup_wallet_internal: {
+        Args: { _amount: number; _notes?: string; _payment_method?: string }
+        Returns: {
+          message: string
+          new_balance: number
+          success: boolean
+          transaction_id: string
+        }[]
+      }
       validate_promo_code: {
+        Args: { _code: string; _purchase_amount: number }
+        Returns: {
+          code: string
+          discount_type: Database["public"]["Enums"]["discount_type"]
+          discount_value: number
+          message: string
+          min_purchase: number
+          title: string
+          valid: boolean
+        }[]
+      }
+      validate_promo_code_internal: {
         Args: { _code: string; _purchase_amount: number }
         Returns: {
           code: string
