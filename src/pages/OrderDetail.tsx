@@ -11,6 +11,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { WarrantyClaimDialog } from "@/components/WarrantyClaimDialog";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { ShieldCheck } from "lucide-react";
 
 function FieldRow({ label, icon, value, keyId, copy, copiedIdx, mono }: {
   label: string; icon: string; value: string; keyId: string;
@@ -537,6 +540,29 @@ export default function OrderDetail() {
                     </div>
                   );
                 })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {order.payment_status === "paid" && (
+          <Card className="border-0 bg-gradient-to-br from-primary/5 to-accent/5 shadow-lg md:col-span-2">
+            <CardContent className="space-y-3 p-6">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                <h3 className="font-bold">Garansi & Bantuan</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Ada masalah dengan akun? Ajukan klaim garansi via WhatsApp — admin akan menerima detail order kamu secara otomatis.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <WarrantyClaimDialog order={order as any} />
+                <WhatsAppButton
+                  label="Tanya Admin"
+                  variant="outline"
+                  message={`Halo Admin, saya ingin bertanya tentang order ${order.order_number}`}
+                  className="w-full"
+                />
               </div>
             </CardContent>
           </Card>
