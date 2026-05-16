@@ -1,61 +1,59 @@
-## Tujuan
+## Tombol WA + Form Garansi di Halaman Order
 
-Tambahkan sistem **Banner Promo** yang bisa diupload admin, dijadwalkan, diatur urutan & posisi, dan tampil di slot strategis. Klik banner = langsung ke produk terkait.
+Menambahkan fitur pengaduan garansi via WhatsApp di halaman detail order. Customer isi form singkat → buka WhatsApp admin dengan template pesan otomatis terisi data order.
 
-## Penempatan Slot
+### Alur
+1. Di `OrderDetail.tsx`, tambah card "Garansi & Bantuan" (muncul kalau `payment_status = paid`).
+2. Tombol **"Ajukan Klaim Garansi"** → buka dialog form.
+3. Form berisi:
+   - Jenis masalah (select): Akun tidak bisa login / Password berubah / Akun ter-banned / Lainnya
+   - Deskripsi masalah (textarea, max 500 char)
+   - Upload bukti opsional (screenshot, ke Supabase Storage bucket `warranty-proofs`)
+4. Tombol **"Kirim via WhatsApp"** → generate URL `https://wa.me/{nomor_admin}?text={template}` dan buka di tab baru.
+5. Template pesan otomatis (Bahasa Indonesia):
+   ```
+   Halo Admin BuyingAccount, saya ingin ajukan klaim garansi:
 
-1. **Hero Homepage** (atas, carousel besar) — slot `home_hero`
-2. **Halaman Produk** (strip di atas grid) — slot `products_top`
-3. **Detail Produk** (banner kecil) — slot `product_detail`
-4. **Cart & Checkout** (banner promo) — slot `cart_checkout`
+   No. Order: #ORD-12345
+   Produk: Netflix Premium
+   Tanggal Order: 16 Mei 2026
+   Email: customer@email.com
 
-## Database
+   Jenis Masalah: Akun tidak bisa login
+   Deskripsi: [isi user]
 
-Tabel baru `promo_banners`:
-- `image_url` (storage Lovable Cloud)
-- `title`, `subtitle` (opsional, untuk alt/aksesibilitas)
-- `product_id` (FK ke produk → tujuan klik)
-- `placement` (enum: home_hero, products_top, product_detail, cart_checkout)
-- `display_order` (urutan)
-- `starts_at`, `ends_at` (jadwal aktif)
-- `is_active` (toggle manual)
+   Bukti: [URL screenshot kalau ada]
 
-Bucket storage baru `promo-banners` (public). RLS:
-- Public: SELECT banner aktif (sesuai jadwal)
-- Admin: full CRUD
+   Mohon bantuannya, terima kasih.
+   ```
 
-## Komponen Frontend
+### Tombol kontak umum
+Tambah tombol kecil **"Hubungi Admin via WA"** (icon WhatsApp) di:
+- `OrderDetail.tsx` (header) — untuk tanya order
+- `Footer.tsx` — untuk pertanyaan umum
 
-`<PromoBannerSlot placement="..." />` — fetch banner aktif untuk slot tsb, render carousel/strip, klik = navigate ke `/product/:slug`. Otomatis hidden jika kosong.
+### Konfigurasi nomor admin
+Nomor WA admin disimpan di tabel baru `app_settings` (key/value) supaya bisa diedit dari admin panel tanpa redeploy. Default: kosong (admin perlu set dulu).
 
-Dipasang di:
-- `src/pages/Index.tsx` (atas hero / dibawah hero)
-- `src/pages/Products.tsx` (atas grid produk)
-- `src/pages/ProductDetail.tsx`
-- `src/pages/Cart.tsx` & `src/pages/Checkout.tsx`
+Tambah halaman `/admin/settings` sederhana berisi:
+- Input "Nomor WhatsApp Admin" (format: `628xxx`, tanpa `+`)
+- Input "Jam Operasional" (opsional, ditampilkan di footer)
 
-## Admin Panel
+### File yang berubah
+- **Baru**: `src/pages/admin/AdminSettings.tsx`, `src/components/WarrantyClaimDialog.tsx`, `src/components/WhatsAppButton.tsx`, `src/hooks/use-app-settings.tsx`
+- **Edit**: `src/pages/OrderDetail.tsx`, `src/components/Footer.tsx`, `src/App.tsx` (route `/admin/settings`), `src/pages/admin/AdminLayout.tsx` (menu sidebar)
 
-Halaman baru `/admin/banners` (`AdminBanners.tsx`):
-- List semua banner (preview gambar, status aktif/expired, slot, produk tujuan)
-- Form: upload gambar, pilih produk, pilih slot, urutan, tanggal mulai/akhir, toggle aktif
-- Aksi: edit, hapus, drag-to-reorder
-- Link ditambahkan di `AdminLayout.tsx` sidebar
+### Database
+Tabel baru `app_settings` (key text PK, value text, updated_at). RLS: public read, admin write.
 
-## File yang Dibuat / Diubah
+### Validasi (zod)
+- `phone`: regex `^[0-9]{10,15}$`
+- `description`: trim, 10–500 char
+- `issue_type`: enum
 
-**Baru**
-- `supabase/migrations/<timestamp>_promo_banners.sql` — tabel, enum, RLS, bucket
-- `src/components/PromoBannerSlot.tsx`
-- `src/pages/admin/AdminBanners.tsx`
+### Catatan
+- **Tidak** menyimpan klaim ke DB (sesuai pilihan opsi 2). Kalau nanti mau tracking klaim di admin panel, tinggal upgrade ke opsi 3.
+- Encoding pesan pakai `encodeURIComponent` untuk mencegah injection di URL.
+- Jika nomor admin belum di-set, tombol WA disembunyikan + tampilkan toast "Fitur belum aktif, hubungi admin".
 
-**Diedit**
-- `src/pages/Index.tsx`, `Products.tsx`, `ProductDetail.tsx`, `Cart.tsx`, `Checkout.tsx` — pasang slot
-- `src/pages/admin/AdminLayout.tsx` — menu Banner
-- `src/App.tsx` — route admin baru
-
-## Catatan
-
-- Banner hanya tampil jika `is_active=true` AND `now()` di antara `starts_at`/`ends_at` (NULL = tidak dibatasi).
-- Carousel pakai `embla-carousel-react` (sudah ada via shadcn).
-- Tidak menyentuh sistem promo code (`promos`) yang sudah ada — ini fitur banner terpisah.
+Mohon konfirmasi nomor WA admin (atau saya skip dulu dan admin set sendiri dari `/admin/settings` setelah fitur deploy).
