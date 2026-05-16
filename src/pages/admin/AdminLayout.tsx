@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Grid2x2,
   Megaphone,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +53,7 @@ const NAV_ITEMS = [
   { to: "/admin/credentials", icon: Key, label: "Sales History" },
   { to: "/admin/import", icon: Upload, label: "Import TXT" },
   { to: "/admin/users", icon: Users, label: "Users" },
+  { to: "/admin/settings", icon: Settings, label: "Pengaturan" },
 ];
 
 function AdminShell() {
