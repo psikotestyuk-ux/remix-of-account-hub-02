@@ -34,6 +34,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminBanners from "./pages/admin/AdminBanners";
+import AdminSettings from "./pages/admin/AdminSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -88,6 +89,7 @@ const App = () => (
                     <Route path="users/:id" element={<AdminUserDetail />} />
                     <Route path="categories" element={<AdminCategories />} />
                     <Route path="banners" element={<AdminBanners />} />
+                    <Route path="settings" element={<AdminSettings />} />
                   </Route>
                 </Routes>
               </AdminAuthProvider>
