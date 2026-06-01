@@ -656,6 +656,20 @@ export type Database = {
           total_price: number
         }[]
       }
+      get_order_product_info: {
+        Args: { _order_number: string }
+        Returns: {
+          grade_label: string
+          package_name: string
+          package_quantity: number
+          product_category: string
+          product_id: string
+          product_image_url: string
+          product_name: string
+          product_slug: string
+          product_status: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
