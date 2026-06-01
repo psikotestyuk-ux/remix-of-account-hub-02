@@ -161,12 +161,12 @@ export default function OrderDetail() {
       if (error) throw error;
       const o = Array.isArray(rows) ? rows[0] : rows;
       if (!o) return null;
-      // Ambil produk + grade + paket secara terpisah (semua sudah punya RLS public-read)
-      const [prodRes, gradeRes, pkgRes] = await Promise.all([
-        o.product_id ? supabase.from("products").select("*").eq("id", o.product_id).maybeSingle() : Promise.resolve({ data: null }),
-        o.grade_id ? supabase.from("account_grades").select("grade").eq("id", o.grade_id).maybeSingle() : Promise.resolve({ data: null }),
-        o.package_id ? supabase.from("packages").select("name, quantity").eq("id", o.package_id).maybeSingle() : Promise.resolve({ data: null }),
-      ]);
+      // Ambil produk + grade + paket via SECURITY DEFINER RPC supaya tetap muncul
+      // walau produk sudah dinonaktifkan (RLS public hanya menampilkan status='active').
+      const { data: infoRows } = await supabase.rpc("get_order_product_info", {
+        _order_number: orderNumber!,
+      });
+      const info = Array.isArray(infoRows) ? infoRows[0] : infoRows;
       // Ambil tanggal upload bukti (tidak di-return oleh RPC)
       const { data: extra } = await supabase
         .from("orders")
@@ -175,9 +175,18 @@ export default function OrderDetail() {
         .maybeSingle();
       return {
         ...o,
-        products: prodRes.data,
-        account_grades: gradeRes.data,
-        packages: pkgRes.data,
+        products: info
+          ? {
+              id: info.product_id,
+              name: info.product_name,
+              category: info.product_category,
+              image_url: info.product_image_url,
+              slug: info.product_slug,
+              status: info.product_status,
+            }
+          : null,
+        account_grades: info?.grade_label ? { grade: info.grade_label } : null,
+        packages: info?.package_name ? { name: info.package_name, quantity: info.package_quantity } : null,
         payment_proof_uploaded_at: extra?.payment_proof_uploaded_at ?? null,
       };
     },
