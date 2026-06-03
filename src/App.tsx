@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { ChatWidget } from "@/components/ChatWidget";
 import { AdminAuthProvider } from "@/hooks/use-admin-auth";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
@@ -21,6 +22,7 @@ import VerifyEmail from "./pages/VerifyEmail";
 import Profile from "./pages/Profile";
 import TopUp from "./pages/TopUp";
 import Wallet from "./pages/Wallet";
+import Wishlist from "./pages/Wishlist";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -35,6 +37,9 @@ import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminBanners from "./pages/admin/AdminBanners";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminReviews from "./pages/admin/AdminReviews";
+import AdminChat from "./pages/admin/AdminChat";
+import AdminReports from "./pages/admin/AdminReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +51,7 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 pb-16 md:pb-0">{children}</main>
       
       <MobileBottomNav />
+      <ChatWidget />
     </div>
   );
 }
@@ -71,6 +77,7 @@ const App = () => (
           <Route path="/profile" element={<PublicLayout><Profile /></PublicLayout>} />
           <Route path="/topup" element={<PublicLayout><TopUp /></PublicLayout>} />
           <Route path="/wallet" element={<PublicLayout><Wallet /></PublicLayout>} />
+          <Route path="/wishlist" element={<PublicLayout><Wishlist /></PublicLayout>} />
           <Route
             path="/admin/*"
             element={
@@ -90,6 +97,9 @@ const App = () => (
                     <Route path="categories" element={<AdminCategories />} />
                     <Route path="banners" element={<AdminBanners />} />
                     <Route path="settings" element={<AdminSettings />} />
+                    <Route path="reviews" element={<AdminReviews />} />
+                    <Route path="chat" element={<AdminChat />} />
+                    <Route path="reports" element={<AdminReports />} />
                   </Route>
                 </Routes>
               </AdminAuthProvider>
