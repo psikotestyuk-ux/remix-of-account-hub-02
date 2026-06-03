@@ -578,7 +578,7 @@ export default function OrderDetail() {
           </Card>
         )}
 
-        {order.order_status === "completed" && product?.id && user && order.user_id === user.id && (
+        {order.order_status === "completed" && product?.id && user && (
           <div className="md:col-span-2">
             <ReviewForm productId={product.id} orderId={order.id} />
           </div>
