@@ -1,59 +1,100 @@
-## Tombol WA + Form Garansi di Halaman Order
+# Rencana: Wishlist, Rating, Live Chat, Laporan Penjualan
 
-Menambahkan fitur pengaduan garansi via WhatsApp di halaman detail order. Customer isi form singkat → buka WhatsApp admin dengan template pesan otomatis terisi data order.
+Empat fitur ditambahkan ke BuyingAccount. Setiap fitur punya database, UI customer, dan (bila relevan) panel admin.
 
-### Alur
-1. Di `OrderDetail.tsx`, tambah card "Garansi & Bantuan" (muncul kalau `payment_status = paid`).
-2. Tombol **"Ajukan Klaim Garansi"** → buka dialog form.
-3. Form berisi:
-   - Jenis masalah (select): Akun tidak bisa login / Password berubah / Akun ter-banned / Lainnya
-   - Deskripsi masalah (textarea, max 500 char)
-   - Upload bukti opsional (screenshot, ke Supabase Storage bucket `warranty-proofs`)
-4. Tombol **"Kirim via WhatsApp"** → generate URL `https://wa.me/{nomor_admin}?text={template}` dan buka di tab baru.
-5. Template pesan otomatis (Bahasa Indonesia):
-   ```
-   Halo Admin BuyingAccount, saya ingin ajukan klaim garansi:
+---
 
-   No. Order: #ORD-12345
-   Produk: Netflix Premium
-   Tanggal Order: 16 Mei 2026
-   Email: customer@email.com
+## 1. Wishlist (Favorit Produk)
 
-   Jenis Masalah: Akun tidak bisa login
-   Deskripsi: [isi user]
+**Customer:**
+- Tombol hati di kartu produk & halaman detail produk (toggle add/remove)
+- Halaman `/wishlist` menampilkan semua produk favorit user
+- Link "Wishlist" di header/menu user
+- Indikator jumlah wishlist di header
 
-   Bukti: [URL screenshot kalau ada]
+**Database:**
+- Tabel `wishlists` (user_id, product_id, created_at) dengan unique constraint
+- RLS: user hanya bisa CRUD wishlist miliknya
+- GRANT untuk authenticated + service_role
 
-   Mohon bantuannya, terima kasih.
-   ```
+**Catatan:** Wajib login untuk add ke wishlist; jika belum login, redirect ke `/auth`.
 
-### Tombol kontak umum
-Tambah tombol kecil **"Hubungi Admin via WA"** (icon WhatsApp) di:
-- `OrderDetail.tsx` (header) — untuk tanya order
-- `Footer.tsx` — untuk pertanyaan umum
+---
 
-### Konfigurasi nomor admin
-Nomor WA admin disimpan di tabel baru `app_settings` (key/value) supaya bisa diedit dari admin panel tanpa redeploy. Default: kosong (admin perlu set dulu).
+## 2. Rating & Ulasan Produk
 
-Tambah halaman `/admin/settings` sederhana berisi:
-- Input "Nomor WhatsApp Admin" (format: `628xxx`, tanpa `+`)
-- Input "Jam Operasional" (opsional, ditampilkan di footer)
+**Customer:**
+- Form ulasan di halaman order yang sudah `completed` (rating 1–5 bintang + komentar)
+- Tampilkan rata-rata rating & daftar ulasan di halaman detail produk
+- Satu user = satu ulasan per produk (bisa edit)
 
-### File yang berubah
-- **Baru**: `src/pages/admin/AdminSettings.tsx`, `src/components/WarrantyClaimDialog.tsx`, `src/components/WhatsAppButton.tsx`, `src/hooks/use-app-settings.tsx`
-- **Edit**: `src/pages/OrderDetail.tsx`, `src/components/Footer.tsx`, `src/App.tsx` (route `/admin/settings`), `src/pages/admin/AdminLayout.tsx` (menu sidebar)
+**Database:**
+- Tabel `product_reviews` (user_id, product_id, order_id, rating 1–5, comment, created_at)
+- Validasi via trigger: user hanya bisa review produk yang sudah dia beli & order completed
+- RLS: public SELECT, user CUD miliknya, admin bisa hapus
+- Trigger update kolom `rating` di tabel `products` otomatis (rata-rata)
 
-### Database
-Tabel baru `app_settings` (key text PK, value text, updated_at). RLS: public read, admin write.
+**Admin:**
+- Halaman `/admin/reviews` untuk moderasi (lihat/hapus ulasan tidak pantas)
 
-### Validasi (zod)
-- `phone`: regex `^[0-9]{10,15}$`
-- `description`: trim, 10–500 char
-- `issue_type`: enum
+---
 
-### Catatan
-- **Tidak** menyimpan klaim ke DB (sesuai pilihan opsi 2). Kalau nanti mau tracking klaim di admin panel, tinggal upgrade ke opsi 3.
-- Encoding pesan pakai `encodeURIComponent` untuk mencegah injection di URL.
-- Jika nomor admin belum di-set, tombol WA disembunyikan + tampilkan toast "Fitur belum aktif, hubungi admin".
+## 3. Live Chat (Customer ↔ Admin)
 
-Mohon konfirmasi nomor WA admin (atau saya skip dulu dan admin set sendiri dari `/admin/settings` setelah fitur deploy).
+**Customer:**
+- Widget chat melayang di pojok kanan bawah (semua halaman, kecuali admin)
+- Wajib login untuk buka chat
+- Realtime menggunakan Supabase Realtime
+- Indikator unread message
+
+**Admin:**
+- Halaman `/admin/chat` dengan daftar percakapan di sidebar + panel pesan
+- Realtime sync; tandai sudah dibaca
+
+**Database:**
+- Tabel `chat_conversations` (user_id, last_message_at, unread_user, unread_admin)
+- Tabel `chat_messages` (conversation_id, sender_id, sender_role, content, read_at, created_at)
+- RLS: user akses percakapan miliknya, admin akses semua
+- Aktifkan publication realtime untuk `chat_messages`
+- GRANT lengkap
+
+**Catatan:** Tetap pertahankan tombol WhatsApp yang ada sebagai fallback.
+
+---
+
+## 4. Laporan Penjualan (Admin)
+
+Halaman `/admin/reports` dengan visualisasi:
+
+- **KPI cards:** total revenue, total order, average order value, jumlah customer aktif (filter range tanggal)
+- **Chart penjualan harian** (line/bar chart, 30 hari terakhir, pakai Recharts)
+- **Top produk terlaris** (tabel: produk, qty terjual, revenue)
+- **Top kategori** (pie chart)
+- **Breakdown payment method** (wallet vs xendit_mock)
+- **Export CSV** untuk range tanggal terpilih
+
+**Database:**
+- Tidak perlu tabel baru — pakai agregasi dari `orders` (status `paid`/`completed`)
+- Buat RPC `get_sales_report(start_date, end_date)` SECURITY DEFINER yang cek `has_role(admin)` untuk efisiensi query
+
+---
+
+## Urutan Implementasi
+
+1. Migration database untuk keempat fitur (1 file gabungan atau terpisah)
+2. Wishlist (paling sederhana, dasar pattern)
+3. Rating & ulasan
+4. Live chat (paling kompleks, butuh realtime)
+5. Laporan penjualan admin
+
+## Detail Teknis
+
+- **Realtime:** `ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`
+- **Chart:** library `recharts` (kemungkinan sudah ada via shadcn)
+- **State management:** React Query untuk caching wishlist count, reviews, dll
+- **Routing:** tambah route di `App.tsx` untuk `/wishlist`, `/admin/reviews`, `/admin/chat`, `/admin/reports`
+- **Komponen baru:** `WishlistButton`, `ReviewForm`, `ReviewList`, `ChatWidget`, `ChatAdminPanel`, `SalesChart`, `TopProductsTable`
+
+## Konfirmasi
+
+Apakah Anda ingin semua 4 fitur sekaligus, atau bertahap (misal Wishlist + Rating dulu, baru Chat + Laporan)? Implementasi sekaligus akan menghasilkan beberapa migration + ±15 file baru.
