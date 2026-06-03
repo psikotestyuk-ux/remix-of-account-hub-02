@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PromoBannerSlot } from "@/components/PromoBannerSlot";
+import { WishlistButton } from "@/components/WishlistButton";
+import { ReviewList } from "@/components/ReviewList";
 import { toast } from "sonner";
 
 export default function ProductDetail() {
@@ -124,8 +126,14 @@ export default function ProductDetail() {
             <Button size="lg" variant="outline" className="gap-2 rounded-xl" onClick={handleAddToCart} disabled={product.stock === 0}>
               <ShoppingCart className="h-5 w-5" />
             </Button>
+            <WishlistButton productId={product.id} className="h-11 w-11" />
           </div>
         </div>
+      </div>
+
+      <div className="mt-10">
+        <h2 className="mb-4 text-xl font-bold">Ulasan Pelanggan</h2>
+        <ReviewList productId={product.id} />
       </div>
     </div>
   );
