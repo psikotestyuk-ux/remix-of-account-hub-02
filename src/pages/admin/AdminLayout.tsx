@@ -14,6 +14,9 @@ import {
   Grid2x2,
   Megaphone,
   Settings,
+  Star,
+  MessageCircle,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +48,7 @@ import { toast } from "sonner";
 
 const NAV_ITEMS = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/admin/reports", icon: BarChart3, label: "Laporan" },
   { to: "/admin/categories", icon: Grid2x2, label: "Kategori" },
   { to: "/admin/products", icon: Package, label: "Produk" },
   { to: "/admin/promos", icon: Tag, label: "Promo" },
@@ -53,6 +57,8 @@ const NAV_ITEMS = [
   { to: "/admin/credentials", icon: Key, label: "Sales History" },
   { to: "/admin/import", icon: Upload, label: "Import TXT" },
   { to: "/admin/users", icon: Users, label: "Users" },
+  { to: "/admin/reviews", icon: Star, label: "Ulasan" },
+  { to: "/admin/chat", icon: MessageCircle, label: "Live Chat" },
   { to: "/admin/settings", icon: Settings, label: "Pengaturan" },
 ];
 
