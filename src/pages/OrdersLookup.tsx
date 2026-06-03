@@ -30,6 +30,7 @@ export default function OrdersLookup() {
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<any | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -41,22 +42,33 @@ export default function OrdersLookup() {
   const handleCheck = async (e: React.FormEvent) => {
     e.preventDefault();
     const t = orderNum.trim().toUpperCase();
+    setErrorMsg(null);
+    setResult(null);
+    setNotFound(false);
     if (!t) { toast.error("Masukkan nomor pesanan"); return; }
     if (!/^BA-[A-Z0-9]{4,12}$/.test(t)) {
-      toast.error("Format salah. Contoh: BA-ABC123");
+      setErrorMsg("Format nomor pesanan salah. Contoh yang benar: BA-ABC123");
       return;
     }
     setChecking(true);
-    setResult(null);
-    setNotFound(false);
     try {
       const { data, error } = await supabase.rpc("get_order_by_number", { _order_number: t });
-      if (error) throw error;
+      if (error) {
+        const msg = (error.message || "").toLowerCase();
+        if (error.code === "42501" || msg.includes("permission denied")) {
+          setErrorMsg("Akses ditolak. Silakan login terlebih dahulu untuk mengecek pesanan.");
+        } else if (msg.includes("jwt") || msg.includes("auth")) {
+          setErrorMsg("Sesi login berakhir. Silakan login ulang.");
+        } else {
+          setErrorMsg("Gagal mengambil pesanan: " + (error.message || "kesalahan tidak diketahui"));
+        }
+        return;
+      }
       const o = Array.isArray(data) ? data[0] : data;
       if (!o) { setNotFound(true); return; }
       setResult(o);
     } catch (err: any) {
-      toast.error("Gagal mengambil pesanan: " + (err.message || "unknown"));
+      setErrorMsg("Gagal mengambil pesanan: " + (err.message || "kesalahan jaringan"));
     } finally {
       setChecking(false);
     }
@@ -87,6 +99,17 @@ export default function OrdersLookup() {
             <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">
               ❌ Pesanan tidak ditemukan. Periksa kembali nomor pesanannya.
             </p>
+          )}
+
+          {errorMsg && (
+            <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">
+              <p>⚠️ {errorMsg}</p>
+              {!user && errorMsg.toLowerCase().includes("login") && (
+                <Link to="/auth?redirect=/orders-lookup" className="mt-2 inline-block font-medium underline">
+                  Login sekarang
+                </Link>
+              )}
+            </div>
           )}
 
           {result && (() => {
