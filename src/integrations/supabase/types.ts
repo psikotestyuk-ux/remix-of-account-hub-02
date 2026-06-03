@@ -179,6 +179,77 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string | null
+          last_message_preview: string | null
+          unread_admin: number
+          unread_user: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          unread_admin?: number
+          unread_user?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          unread_admin?: number
+          unread_user?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_id: string
+          sender_role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id: string
+          sender_role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+          sender_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           admin_notes: string | null
@@ -316,6 +387,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          order_id: string
+          product_id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          order_id: string
+          product_id: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          product_id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       products: {
         Row: {
@@ -590,6 +694,27 @@ export type Database = {
         }
         Relationships: []
       }
+      wishlists: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -613,6 +738,14 @@ export type Database = {
           needed: number
           success: boolean
           total_assigned: number
+        }[]
+      }
+      admin_send_chat_message: {
+        Args: { _content: string; _conversation_id: string }
+        Returns: {
+          message: string
+          message_id: string
+          success: boolean
         }[]
       }
       generate_short_order_code: { Args: never; Returns: string }
@@ -670,12 +803,20 @@ export type Database = {
           product_status: string
         }[]
       }
+      get_sales_report: {
+        Args: { _end_date: string; _start_date: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      mark_chat_read: {
+        Args: { _as_admin?: boolean; _conversation_id: string }
+        Returns: undefined
       }
       purchase_with_wallet: {
         Args: {
@@ -711,9 +852,22 @@ export type Database = {
           success: boolean
         }[]
       }
+      recompute_product_rating: {
+        Args: { _product_id: string }
+        Returns: undefined
+      }
       recompute_product_stock: {
         Args: { _product_id: string }
         Returns: undefined
+      }
+      send_chat_message: {
+        Args: { _content: string }
+        Returns: {
+          conversation_id: string
+          message: string
+          message_id: string
+          success: boolean
+        }[]
       }
       topup_wallet: {
         Args: { _amount: number; _notes?: string; _payment_method?: string }
