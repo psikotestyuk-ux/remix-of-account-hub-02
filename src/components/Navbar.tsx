@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart, Menu, X, Wallet, User, LogOut, Receipt } from "lucide-react";
+import { ShoppingCart, Menu, X, Wallet, User, LogOut, Receipt, Heart } from "lucide-react";
 import { useState } from "react";
 import { useCartStore } from "@/store/cart";
 import { useAuth } from "@/hooks/use-auth";
@@ -63,6 +63,7 @@ export function Navbar() {
                 <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">Saldo: {formatRupiah(balance)}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild><Link to="/profile" className="gap-2"><User className="h-4 w-4" /> Profil</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/wishlist" className="gap-2"><Heart className="h-4 w-4" /> Wishlist</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/wallet" className="gap-2"><Receipt className="h-4 w-4" /> Riwayat Saldo</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/topup" className="gap-2"><Wallet className="h-4 w-4" /> Top Up</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -98,6 +99,7 @@ export function Navbar() {
             ) : (
               <>
                 <Link to="/profile" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted">Profil</Link>
+                <Link to="/wishlist" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted">Wishlist</Link>
                 <button onClick={() => { signOut(); setMobileOpen(false); }} className="rounded-lg px-3 py-2 text-left text-sm font-medium text-destructive hover:bg-muted">Keluar</button>
               </>
             )}
