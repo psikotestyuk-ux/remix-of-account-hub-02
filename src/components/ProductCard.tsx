@@ -7,6 +7,7 @@ import { useCartStore } from "@/store/cart";
 import { formatRupiah, getStockBadge, CATEGORY_EMOJI } from "@/lib/constants";
 import { useCategoryLogos } from "@/hooks/use-category-logos";
 import { toast } from "sonner";
+import { WishlistButton } from "@/components/WishlistButton";
 
 interface ProductCardProps {
   id: string;
@@ -51,6 +52,9 @@ export function ProductCard({ id, name, category, price, stock, rating, image_ur
             >
               {stockBadge.label}
             </Badge>
+          </div>
+          <div className="absolute left-3 top-3">
+            <WishlistButton productId={id} />
           </div>
         </div>
         <CardContent className="p-4">

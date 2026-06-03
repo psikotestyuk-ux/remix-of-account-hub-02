@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { WarrantyClaimDialog } from "@/components/WarrantyClaimDialog";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { ReviewForm } from "@/components/ReviewForm";
 import { ShieldCheck } from "lucide-react";
 
 function FieldRow({ label, icon, value, keyId, copy, copiedIdx, mono }: {
@@ -575,6 +576,12 @@ export default function OrderDetail() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {order.order_status === "completed" && product?.id && user && (
+          <div className="md:col-span-2">
+            <ReviewForm productId={product.id} orderId={order.id} />
+          </div>
         )}
       </div>
     </div>
