@@ -94,20 +94,7 @@ export function ChatWidget() {
     qc.invalidateQueries({ queryKey: ["chat-msgs", row.conversation_id] });
   };
 
-  if (!user) {
-    return (
-      <button
-        onClick={() => {
-          toast.info("Login dulu untuk chat dengan admin");
-          navigate("/auth");
-        }}
-        className="fixed bottom-20 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg md:bottom-6"
-        aria-label="Chat"
-      >
-        <MessageCircle className="h-5 w-5" />
-      </button>
-    );
-  }
+  if (!user) return null;
 
   const unread = conv?.unread_user ?? 0;
 
