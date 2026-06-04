@@ -11,8 +11,9 @@ const HAS_PG = !!process.env.PGHOST;
 
 function psql(sql: string): { code: number; out: string; err: string } {
   try {
-    const out = execSync(`psql -X -A -t -v ON_ERROR_STOP=1 -c ${JSON.stringify(sql)}`, {
-      stdio: ["ignore", "pipe", "pipe"],
+    const out = execSync(`psql -X -A -t -v ON_ERROR_STOP=1`, {
+      input: sql,
+      stdio: ["pipe", "pipe", "pipe"],
       encoding: "utf8",
     });
     return { code: 0, out: out.trim(), err: "" };
