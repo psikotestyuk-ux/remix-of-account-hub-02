@@ -65,8 +65,14 @@ export function WarrantyClaimDialog({ order }: Props) {
     try {
       let proofUrl = "";
       if (file) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          toast.error("Silakan login untuk mengunggah bukti.");
+          setSubmitting(false);
+          return;
+        }
         const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
-        const path = `${order.id}/${Date.now()}.${ext}`;
+        const path = `${user.id}/${order.id}/${Date.now()}.${ext}`;
         const { error: upErr } = await supabase.storage
           .from("warranty-proofs")
           .upload(path, file, { contentType: file.type, upsert: false });
