@@ -1,20 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import { execSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 
 /**
  * Integration tests for the `warranty-proofs` storage bucket policies.
  *
- * Two complementary layers are checked:
- *
- *  1. **Policy contract** — assert that the expected RLS policies exist on
- *     storage.objects with the correct ownership predicates. Guards against
- *     accidental drops / loosening of policies in future migrations.
- *
- *  2. **Behavioral simulation** — evaluate the policy USING/WITH CHECK
- *     expressions directly using a synthetic `auth.uid()` and a sample
- *     object name, asserting that only the owner (folder == uid) and admins
- *     are accepted.
+ * Two layers:
+ *  1. Policy contract — assert expected RLS policies exist on storage.objects
+ *     with ownership predicates (guards against regressions in future migrations).
+ *  2. Behavioral simulation — evaluate the live policy USING/WITH CHECK
+ *     expressions against synthetic auth.uid() values to confirm only the
+ *     owner (folder == uid) — and never strangers or anon — passes.
  *
  * Requires Supabase PG* env vars (auto-set in the Lovable dev sandbox).
  */
@@ -38,54 +34,48 @@ function psql(sql: string): { code: number; out: string; err: string } {
   }
 }
 
-// Evaluate any boolean SQL expression with a chosen auth.uid() value by
-// overriding the auth.uid() function inside a single-statement scope.
-function evalAs(uid: string | null, expr: string): boolean {
-  const uidLiteral = uid === null ? "NULL::uuid" : `'${uid}'::uuid`;
-  const sql = `
-    WITH ctx AS (SELECT ${uidLiteral} AS uid)
-    SELECT COALESCE((
-      SELECT (${expr.replace(/auth\.uid\(\)/g, "ctx.uid")})
-      FROM ctx
-    ), false)::text;
-  `;
-  const r = psql(sql);
+// Evaluate the boolean expression for many uids in a single round-trip.
+function evalMany(expr: string, uids: Array<string | null>): boolean[] {
+  const projections = uids.map((uid, i) => {
+    const lit = uid === null ? "NULL::uuid" : `'${uid}'::uuid`;
+    const e = expr.replace(/auth\.uid\(\)/g, lit);
+    return `COALESCE((${e})::text, 'f') AS r${i}`;
+  }).join(", ");
+  const r = psql(`SELECT ${projections};`);
   if (r.code !== 0) throw new Error(r.err);
-  return r.out === "t" || r.out === "true";
+  return r.out.split("|").map((v) => v === "t" || v === "true");
 }
 
-describe.skipIf(!HAS_PG)("warranty-proofs storage policies — contract", () => {
-  const policies = HAS_PG
-    ? (() => {
-        const r = psql(`
-          SELECT policyname || '|' || cmd || '|' ||
-                 COALESCE(qual, '') || '|' || COALESCE(with_check, '')
-          FROM pg_policies
-          WHERE schemaname = 'storage'
-            AND tablename = 'objects'
-            AND (
-              qual ILIKE '%warranty-proofs%'
-              OR with_check ILIKE '%warranty-proofs%'
-            )
-          ORDER BY policyname;
-        `);
-        return r.out.split("\n").filter(Boolean).map((line) => {
-          const [name, cmd, qual, withCheck] = line.split("|");
-          return { name, cmd, qual, withCheck };
-        });
-      })()
-    : [];
+interface Policy { name: string; cmd: string; qual: string; withCheck: string; }
 
-  it("only authenticated users can INSERT, and only into their own folder", () => {
-    const insert = policies.find((p) => p.cmd === "INSERT");
-    expect(insert, "expected an INSERT policy on warranty-proofs").toBeDefined();
-    expect(insert!.withCheck).toMatch(/auth\.uid\(\)/);
-    expect(insert!.withCheck).toMatch(/storage\.foldername/);
-    // The dropped public policy must no longer exist
-    const anonUploadPolicyExists = policies.some(
-      (p) => p.name === "Anyone can upload warranty proofs"
-    );
-    expect(anonUploadPolicyExists).toBe(false);
+let policies: Policy[] = [];
+
+describe.skipIf(!HAS_PG)("warranty-proofs storage policies — contract", () => {
+  beforeAll(() => {
+    const r = psql(`
+      SELECT policyname || '|' || cmd || '|' ||
+             COALESCE(qual, '') || '|' || COALESCE(with_check, '')
+      FROM pg_policies
+      WHERE schemaname='storage' AND tablename='objects'
+        AND (qual ILIKE '%warranty-proofs%' OR with_check ILIKE '%warranty-proofs%')
+      ORDER BY policyname;
+    `);
+    if (r.code !== 0) throw new Error(r.err);
+    policies = r.out.split("\n").filter(Boolean).map((line) => {
+      const [name, cmd, qual, withCheck] = line.split("|");
+      return { name, cmd, qual, withCheck };
+    });
+  }, 30_000);
+
+  it("dropped the public 'Anyone can upload warranty proofs' policy", () => {
+    expect(policies.some((p) => p.name === "Anyone can upload warranty proofs")).toBe(false);
+  });
+
+  it("INSERT policy requires authenticated user + own-folder WITH CHECK", () => {
+    const ins = policies.find((p) => p.cmd === "INSERT");
+    expect(ins, "expected an INSERT policy on warranty-proofs").toBeDefined();
+    expect(ins!.withCheck).toMatch(/auth\.uid\(\)/);
+    expect(ins!.withCheck).toMatch(/storage\.foldername/);
   });
 
   it("has owner-scoped SELECT / UPDATE / DELETE policies", () => {
@@ -97,7 +87,7 @@ describe.skipIf(!HAS_PG)("warranty-proofs storage policies — contract", () => 
     }
   });
 
-  it("admin has an ALL/manage policy via has_role", () => {
+  it("admin has a management policy via has_role", () => {
     const admin = policies.find((p) => /has_role/.test(p.qual) || /has_role/.test(p.withCheck));
     expect(admin, "expected an admin policy using has_role").toBeDefined();
   });
@@ -107,47 +97,44 @@ describe.skipIf(!HAS_PG)("warranty-proofs storage policies — behavior", () => 
   const owner = randomUUID();
   const stranger = randomUUID();
   const ownPath = `${owner}/file-${randomUUID()}.jpg`;
+  const exprs: Record<string, string> = {};
 
-  // Re-derive the policy expressions from the live database so the test
-  // exercises whatever predicate is currently deployed.
-  function policyExpr(cmd: "INSERT" | "SELECT" | "UPDATE" | "DELETE"): string {
+  beforeAll(() => {
     const r = psql(`
-      SELECT COALESCE(with_check, qual)
+      SELECT cmd || '::' || COALESCE(with_check, qual)
       FROM pg_policies
       WHERE schemaname='storage' AND tablename='objects'
-        AND cmd='${cmd}'
         AND COALESCE(qual,'') || COALESCE(with_check,'') ILIKE '%warranty-proofs%'
-        AND COALESCE(qual,'') || COALESCE(with_check,'') ILIKE '%foldername%'
-      LIMIT 1;
+        AND COALESCE(qual,'') || COALESCE(with_check,'') ILIKE '%foldername%';
     `);
-    if (r.code !== 0 || !r.out) throw new Error(`no owner ${cmd} policy: ${r.err}`);
-    // Replace the literal `name` reference with our test object name.
-    return r.out.replace(/\bname\b/g, `'${ownPath}'`).replace(/\bbucket_id\b/g, "'warranty-proofs'");
-  }
+    if (r.code !== 0) throw new Error(r.err);
+    for (const line of r.out.split("\n").filter(Boolean)) {
+      const idx = line.indexOf("::");
+      const cmd = line.slice(0, idx);
+      const raw = line.slice(idx + 2);
+      exprs[cmd] = raw
+        .replace(/\bname\b/g, `'${ownPath}'`)
+        .replace(/\bbucket_id\b/g, "'warranty-proofs'");
+    }
+  }, 30_000);
 
-  it("INSERT: owner ✓, stranger ✗, anon ✗", () => {
-    const expr = policyExpr("INSERT");
-    expect(evalAs(owner, expr)).toBe(true);
-    expect(evalAs(stranger, expr)).toBe(false);
-    expect(evalAs(null, expr)).toBe(false);
-  });
+  it("INSERT (upload): owner OK, stranger blocked, anon blocked", () => {
+    const [o, s, a] = evalMany(exprs.INSERT, [owner, stranger, null]);
+    expect({ owner: o, stranger: s, anon: a }).toEqual({ owner: true, stranger: false, anon: false });
+  }, 30_000);
 
-  it("SELECT (download): owner ✓, stranger ✗, anon ✗", () => {
-    const expr = policyExpr("SELECT");
-    expect(evalAs(owner, expr)).toBe(true);
-    expect(evalAs(stranger, expr)).toBe(false);
-    expect(evalAs(null, expr)).toBe(false);
-  });
+  it("SELECT (download): owner OK, stranger blocked, anon blocked", () => {
+    const [o, s, a] = evalMany(exprs.SELECT, [owner, stranger, null]);
+    expect({ owner: o, stranger: s, anon: a }).toEqual({ owner: true, stranger: false, anon: false });
+  }, 30_000);
 
-  it("DELETE: owner ✓, stranger ✗", () => {
-    const expr = policyExpr("DELETE");
-    expect(evalAs(owner, expr)).toBe(true);
-    expect(evalAs(stranger, expr)).toBe(false);
-  });
+  it("DELETE: owner OK, stranger blocked", () => {
+    const [o, s] = evalMany(exprs.DELETE, [owner, stranger]);
+    expect({ owner: o, stranger: s }).toEqual({ owner: true, stranger: false });
+  }, 30_000);
 
-  it("UPDATE: owner ✓, stranger ✗", () => {
-    const expr = policyExpr("UPDATE");
-    expect(evalAs(owner, expr)).toBe(true);
-    expect(evalAs(stranger, expr)).toBe(false);
-  });
+  it("UPDATE: owner OK, stranger blocked", () => {
+    const [o, s] = evalMany(exprs.UPDATE, [owner, stranger]);
+    expect({ owner: o, stranger: s }).toEqual({ owner: true, stranger: false });
+  }, 30_000);
 });
