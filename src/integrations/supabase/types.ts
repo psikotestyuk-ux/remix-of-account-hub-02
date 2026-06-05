@@ -887,6 +887,7 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      user_owns_order: { Args: { _order_id: string }; Returns: boolean }
       validate_promo_code: {
         Args: { _code: string; _purchase_amount: number }
         Returns: {
