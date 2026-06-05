@@ -7,33 +7,22 @@ interface Props {
   productId: string;
 }
 
-function maskName(name: string | null | undefined) {
-  if (!name) return "Pengguna";
-  const trimmed = name.trim();
-  if (trimmed.length <= 2) return trimmed[0] + "***";
-  return trimmed.slice(0, 2) + "***";
-}
-
 export function ReviewList({ productId }: Props) {
   const { data, isLoading } = useQuery({
     queryKey: ["product-reviews", productId],
     queryFn: async () => {
-      const { data: reviews } = await supabase
-        .from("product_reviews")
-        .select("id, user_id, rating, comment, created_at")
-        .eq("product_id", productId)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      const ids = Array.from(new Set((reviews || []).map((r: any) => r.user_id)));
-      let nameMap: Record<string, string> = {};
-      if (ids.length > 0) {
-        const { data: profs } = await supabase
-          .from("profiles")
-          .select("user_id, full_name")
-          .in("user_id", ids);
-        nameMap = Object.fromEntries((profs || []).map((p: any) => [p.user_id, p.full_name]));
-      }
-      return (reviews || []).map((r: any) => ({ ...r, name: nameMap[r.user_id] }));
+      const { data, error } = await supabase.rpc("get_product_reviews_public", {
+        _product_id: productId,
+      });
+      if (error) throw error;
+      return (data || []) as Array<{
+        id: string;
+        product_id: string;
+        rating: number;
+        comment: string | null;
+        created_at: string;
+        display_name: string;
+      }>;
     },
   });
 
@@ -69,7 +58,7 @@ export function ReviewList({ productId }: Props) {
       {data.map((r) => (
         <div key={r.id} className="rounded-xl border p-4">
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-sm font-medium">{maskName(r.name)}</span>
+            <span className="text-sm font-medium">{r.display_name}</span>
             <span className="text-xs text-muted-foreground">
               {new Date(r.created_at).toLocaleDateString("id-ID", { dateStyle: "medium" })}
             </span>
