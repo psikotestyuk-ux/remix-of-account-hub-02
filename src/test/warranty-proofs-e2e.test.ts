@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
@@ -48,9 +49,7 @@ function fullOwnerPathFromStranger() {
   return `${ownerId}/${strangerPath}`;
 }
 
-const fileBytes = new Blob([new Uint8Array([1, 2, 3, 4, 5])], {
-  type: "application/octet-stream",
-});
+const fileBytes = new Uint8Array([1, 2, 3, 4, 5]);
 
 async function provisionUser(email: string) {
   const { data, error } = await admin.auth.admin.createUser({
