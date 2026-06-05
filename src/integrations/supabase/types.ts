@@ -803,6 +803,17 @@ export type Database = {
           product_status: string
         }[]
       }
+      get_product_reviews_public: {
+        Args: { _product_id: string }
+        Returns: {
+          comment: string
+          created_at: string
+          display_name: string
+          id: string
+          product_id: string
+          rating: number
+        }[]
+      }
       get_sales_report: {
         Args: { _end_date: string; _start_date: string }
         Returns: Json
