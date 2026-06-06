@@ -85,6 +85,21 @@ serve(async (req) => {
 
 function renderTemplate(template: string, data: Record<string, any>): string {
   const templates: Record<string, (data: Record<string, any>) => string> = {
+    "signup-confirmation": (data) => `
+      <h1>Selamat datang di BuyingAccount, ${data.fullName}!</h1>
+      <p>Terima kasih telah mendaftar. Untuk menyelesaikan pendaftaran, silakan verifikasi email kamu dengan klik tombol di bawah:</p>
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="${data.verifyLink}" style="background: #2c3e50; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; display: inline-block; font-weight: bold;">
+          Verifikasi Email
+        </a>
+      </p>
+      <p>Atau copy-paste link ini ke browser kamu:</p>
+      <p style="word-break: break-all; background: #f0f0f0; padding: 10px; border-radius: 5px; font-size: 12px;">
+        ${data.verifyLink}
+      </p>
+      <p>Link ini berlaku selama 24 jam. Jika kamu tidak membuat akun, abaikan email ini.</p>
+      <p style="color: #999; font-size: 12px;">Email ini dikirim ke: <strong>${data.email}</strong></p>
+    `,
     "topup-confirmation": (data) => `
       <h1>Konfirmasi Top Up Saldo</h1>
       <p>Top up sebesar <strong>${data.amount}</strong> berhasil diproses.</p>
