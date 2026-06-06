@@ -85,6 +85,13 @@ serve(async (req) => {
 
 function renderTemplate(template: string, data: Record<string, any>): string {
   const templates: Record<string, (data: Record<string, any>) => string> = {
+    "topup-confirmation": (data) => `
+      <h1>Konfirmasi Top Up Saldo</h1>
+      <p>Top up sebesar <strong>${data.amount}</strong> berhasil diproses.</p>
+      <p>Saldo terbaru kamu: <strong>${data.newBalance}</strong></p>
+      <p style="font-size: 12px; color: #999;">Waktu: ${data.timestamp}</p>
+      <p>Gunakan saldo kamu untuk membeli akun di BuyingAccount.</p>
+    `,
     "order-confirmation": (data) => `
       <h1>Terima kasih atas pesananmu!</h1>
       <p>Nomor pesanan: <strong>${data.orderNumber || ""}</strong></p>
@@ -108,10 +115,13 @@ function renderTemplate(template: string, data: Record<string, any>): string {
       <p>Kami akan menghubungimu segera untuk konfirmasi pembayaran.</p>
     `,
     "order-shipped": (data) => `
-      <h1>Pesananmu sudah dikirim!</h1>
-      <p>Nomor pesanan: <strong>${data.orderNumber || ""}</strong></p>
+      <h1>Pesananmu #${data.orderNumber} sudah dikirim!</h1>
+      <p>Kami telah mengirimkan <strong>${data.assignedCount || 1} akun</strong> untuk pesananmu.</p>
       ${data.trackingNumber ? `<p>No. Resi: ${data.trackingNumber}</p>` : ""}
-      <p>Terima kasih telah berbelanja dengan kami!</p>
+      <p style="background: #f0f0f0; padding: 10px; border-radius: 5px;">
+        <strong>Catatan:</strong> ${data.notes || "Silakan cek pesan dan dashboard Anda untuk detail akun."}
+      </p>
+      <p>Jika ada pertanyaan, hubungi kami via chat atau WhatsApp. Terima kasih!</p>
     `,
     "order-delivered": (data) => `
       <h1>Pesananmu sudah tiba!</h1>

@@ -38,6 +38,21 @@ export default function TopUp() {
       if (!result?.success) throw new Error(result?.message || "Topup gagal");
 
       await refreshBalance();
+
+      // Send topup confirmation email
+      supabase.functions.invoke("send-email", {
+        body: {
+          to: user.email,
+          subject: `Konfirmasi Top Up Saldo - ${formatRupiah(amount)}`,
+          template: "topup-confirmation",
+          data: {
+            amount: formatRupiah(amount),
+            newBalance: formatRupiah(balance + amount),
+            timestamp: new Date().toLocaleString("id-ID"),
+          },
+        },
+      }).catch((err) => console.error("Failed to send email:", err));
+
       toast.success(`Saldo +${formatRupiah(amount)} berhasil ditambahkan`);
       navigate("/profile");
     } catch (err: any) {
