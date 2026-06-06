@@ -89,7 +89,7 @@ async function createOrder(userId: string, email: string): Promise<string> {
       total_price: 1000,
       payment_method: "xendit_mock",
       payment_status: "pending",
-      order_status: "pending",
+      order_status: "processing",
     })
     .select("id")
     .single();
