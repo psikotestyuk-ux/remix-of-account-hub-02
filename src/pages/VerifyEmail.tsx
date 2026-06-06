@@ -59,25 +59,12 @@ export default function VerifyEmail() {
     if (!parsed.success) { toast.error("Email tidak valid"); return; }
     setResending(true);
     try {
-      // Send via Resend edge function with fetch
-      const verifyLink = `${window.location.origin}/verify-email?email=${encodeURIComponent(parsed.data)}`;
-      const response = await fetch("https://jkfyrdqhuwudegxjapqi.supabase.co/functions/v1/send-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ""}`,
-        },
-        body: JSON.stringify({
-          to: parsed.data,
-          subject: "Verifikasi Email - BuyingAccount",
-          template: "email-verification",
-          data: {
-            email: parsed.data,
-            verifyLink: verifyLink,
-          },
-        }),
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: parsed.data,
+        options: { emailRedirectTo: `${window.location.origin}/verify-email` },
       });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (error) throw error;
       toast.success("Email verifikasi sudah dikirim ulang");
       setCooldown(60);
     } catch (err: any) {
