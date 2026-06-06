@@ -100,6 +100,20 @@ function renderTemplate(template: string, data: Record<string, any>): string {
       <p>Link ini berlaku selama 24 jam. Jika kamu tidak membuat akun, abaikan email ini.</p>
       <p style="color: #999; font-size: 12px;">Email ini dikirim ke: <strong>${data.email}</strong></p>
     `,
+    "email-verification": (data) => `
+      <h1>Verifikasi Email BuyingAccount</h1>
+      <p>Klik tombol di bawah untuk verifikasi email kamu:</p>
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="${data.verifyLink}" style="background: #2c3e50; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; display: inline-block; font-weight: bold;">
+          Verifikasi Email Sekarang
+        </a>
+      </p>
+      <p>Atau copy-paste link ini:</p>
+      <p style="word-break: break-all; background: #f0f0f0; padding: 10px; border-radius: 5px; font-size: 12px;">
+        ${data.verifyLink}
+      </p>
+      <p>Link berlaku 24 jam. Jika bukan kamu yang request, abaikan email ini.</p>
+    `,
     "topup-confirmation": (data) => `
       <h1>Konfirmasi Top Up Saldo</h1>
       <p>Top up sebesar <strong>${data.amount}</strong> berhasil diproses.</p>
