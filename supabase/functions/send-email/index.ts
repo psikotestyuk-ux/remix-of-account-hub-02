@@ -9,20 +9,24 @@ interface EmailRequest {
   data?: Record<string, any>;
 }
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Content-Type": "application/json",
+};
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
-    });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: corsHeaders,
+    });
   }
 
   try {
@@ -32,7 +36,7 @@ serve(async (req) => {
     if (!to || !subject) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: to, subject" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -40,7 +44,7 @@ serve(async (req) => {
     if (!resendApiKey) {
       return new Response(
         JSON.stringify({ error: "RESEND_API_KEY not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        { status: 500, headers: corsHeaders }
       );
     }
 
@@ -52,7 +56,7 @@ serve(async (req) => {
     if (!emailHtml && !text) {
       return new Response(
         JSON.stringify({ error: "Must provide html, text, or template" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -77,19 +81,19 @@ serve(async (req) => {
       console.error("Resend API error:", resendData);
       return new Response(
         JSON.stringify({ error: "Failed to send email", details: resendData }),
-        { status: response.status, headers: { "Content-Type": "application/json" } }
+        { status: response.status, headers: corsHeaders }
       );
     }
 
     return new Response(JSON.stringify({ success: true, id: resendData.id }), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: corsHeaders,
     });
   } catch (error) {
     console.error("Error in send-email function:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error", details: String(error) }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: corsHeaders }
     );
   }
 });
