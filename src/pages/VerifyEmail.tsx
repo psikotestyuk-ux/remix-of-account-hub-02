@@ -59,10 +59,14 @@ export default function VerifyEmail() {
     if (!parsed.success) { toast.error("Email tidak valid"); return; }
     setResending(true);
     try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
+      // Use signUp instead of resend for better compatibility
+      const { error } = await supabase.auth.signUp({
         email: parsed.data,
-        options: { emailRedirectTo: `${window.location.origin}/verify-email` },
+        password: Math.random().toString(36).substring(2, 15), // dummy password just to trigger email
+        options: {
+          emailRedirectTo: `${window.location.origin}/verify-email`,
+          data: { isResend: true }
+        },
       });
       if (error) throw error;
       toast.success("Email verifikasi sudah dikirim ulang");
