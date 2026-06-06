@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,17 +96,17 @@ export default function Auth() {
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}${redirect}`,
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}${redirect}`,
+        },
       });
-      if (result.error) throw result.error;
-      if (!result.redirected) {
-        toast.success("Selamat datang!");
-        navigate(redirect, { replace: true });
-      }
+      if (error) throw error;
     } catch (err: any) {
       toast.error(err.message || "Gagal login dengan Google");
-    } finally { setGoogleLoading(false); }
+      setGoogleLoading(false);
+    }
   };
 
   const handleForgot = async (e: React.FormEvent) => {
