@@ -95,23 +95,6 @@ export default function AdminOrders() {
     },
     onSuccess: (r: any) => {
       toast.success(`Berhasil assign ${r.assigned_count} akun (${r.total_assigned}/${r.needed})`);
-
-      // Send fulfillment email
-      if (fulfilling?.customer_email) {
-        supabase.functions.invoke("send-email", {
-          body: {
-            to: fulfilling.customer_email,
-            subject: `Pesananmu #${fulfilling.order_number} Sudah Dikirim`,
-            template: "order-shipped",
-            data: {
-              orderNumber: fulfilling.order_number,
-              assignedCount: r.assigned_count,
-              notes: fulfillNotes || "Akun telah dikirim melalui chat. Silakan cek pesan Anda.",
-            },
-          },
-        }).catch((err) => console.error("Failed to send email:", err));
-      }
-
       queryClient.invalidateQueries({ queryKey: ["admin-orders-list"] });
       setFulfilling(null);
       setFulfillNotes("");

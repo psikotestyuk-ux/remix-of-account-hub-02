@@ -91,28 +91,6 @@ export default function Checkout() {
 
       await refreshBalance();
       clearCart();
-
-      // Send order confirmation email
-      supabase.functions.invoke("send-email", {
-        body: {
-          to: user.email,
-          subject: `Konfirmasi Pesanan #${result.order_number}`,
-          template: "order-confirmation",
-          data: {
-            orderNumber: result.order_number,
-            total: totalPrice,
-            status: "Pending",
-            items: [
-              {
-                name: item.name,
-                quantity: finalQty,
-                price: grade?.base_price || item.price,
-              },
-            ],
-          },
-        },
-      }).catch((err) => console.error("Failed to send email:", err));
-
       toast.success("Pembelian berhasil!");
       navigate(`/order-success?orders=${result.order_number}`);
     } catch (err: any) {
