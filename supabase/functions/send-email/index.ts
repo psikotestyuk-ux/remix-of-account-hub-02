@@ -108,10 +108,6 @@ function renderTemplate(template: string, data: Record<string, any>): string {
           Verifikasi Email Sekarang
         </a>
       </p>
-      <p>Atau copy-paste link ini:</p>
-      <p style="word-break: break-all; background: #f0f0f0; padding: 10px; border-radius: 5px; font-size: 12px;">
-        ${data.verifyLink}
-      </p>
       <p>Link berlaku 24 jam. Jika bukan kamu yang request, abaikan email ini.</p>
     `,
     "topup-confirmation": (data) => `
